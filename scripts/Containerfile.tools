@@ -1,0 +1,6 @@
+# Toolbox image used when the host is missing createrepo_c / rpmsign / rpmbuild.
+# Built on demand by scripts/lib-tools.sh and cached as localhost/shinux-tools.
+FROM registry.fedoraproject.org/fedora:44
+RUN dnf -y install --setopt=install_weak_deps=False --nodocs \
+        createrepo_c rpm-build rpm-sign rpmdevtools dpkg gnupg2 tar gzip xz which \
+    && dnf clean all

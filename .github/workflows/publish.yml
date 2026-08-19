@@ -1,0 +1,67 @@
+name: Publish repository
+
+# Rebuilds, re-signs and republishes docs/ whenever a package changes.
+# GitHub Pages serves docs/ from main, so committing docs/ back is the deploy.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/**'
+      - 'scripts/**'
+      - '.github/workflows/publish.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-repository
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    container:
+      image: registry.fedoraproject.org/fedora:44
+    steps:
+      - name: Install packaging tooling
+        run: |
+          dnf -y install --setopt=install_weak_deps=False --nodocs \
+            git createrepo_c rpm-build rpm-sign dpkg gnupg2 python3 \
+            tar gzip xz findutils diffutils
+
+      - uses: actions/checkout@v4
+
+      - name: Trust the workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Import the signing key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          if [ -z "$GPG_PRIVATE_KEY" ]; then
+            echo "::error::secret GPG_PRIVATE_KEY is not set; run scripts/gpg-setup.sh locally and add it"
+            exit 1
+          fi
+          export GNUPGHOME="$RUNNER_TEMP/gnupg"
+          mkdir -p "$GNUPGHOME" && chmod 700 "$GNUPGHOME"
+          printf '%s\n' "$GPG_PRIVATE_KEY" | gpg --batch --quiet --import
+          echo "SIGN_GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
+
+      - name: Build packages
+        run: ./scripts/build.sh
+
+      - name: Sign and regenerate metadata
+        run: ./scripts/make-repo.sh
+
+      - name: Commit the published tree
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs
+          if git diff --cached --quiet; then
+            echo "nothing changed"
+            exit 0
+          fi
+          git commit -m "chore(repo): rebuild and re-sign repository metadata"
+          git push

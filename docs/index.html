@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shinux Repository</title>
+<meta name="description" content="Third-party dnf and apt repository maintained by Abdallah Shehawey.">
+<style>
+  :root{--bg:#0b0f14;--panel:#111823;--line:#1e2a3a;--fg:#e6edf5;--dim:#8ea0b5;
+        --accent:#38bdf8;--accent2:#f59e0b;--code:#0a0e13}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:880px;margin:0 auto;padding:48px 20px 80px}
+  h1{font-size:2rem;margin:0 0 6px;letter-spacing:-.02em}
+  h2{font-size:1.15rem;margin:44px 0 12px;color:var(--accent)}
+  p.lead{color:var(--dim);margin:0 0 8px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+        padding:18px 20px;margin:14px 0}
+  .tabs{display:flex;gap:8px;margin:18px 0 0;flex-wrap:wrap}
+  .tab{padding:7px 14px;border:1px solid var(--line);border-radius:999px;
+       background:transparent;color:var(--dim);cursor:pointer;font:inherit;font-size:.9rem}
+  .tab[aria-selected=true]{background:var(--accent);color:#04121c;border-color:var(--accent);font-weight:600}
+  pre{background:var(--code);border:1px solid var(--line);border-radius:10px;
+      padding:14px 16px;overflow-x:auto;margin:12px 0;font-size:.88rem}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  pre code{color:#cfe8ff}
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.92rem}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--dim);font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em}
+  .badge{display:inline-block;padding:1px 7px;border-radius:5px;font-size:.72rem;
+         font-weight:700;letter-spacing:.03em}
+  .badge.rpm{background:#0e3a52;color:#7dd3fc}
+  .badge.deb{background:#4a2f08;color:#fbbf24}
+  .fpr{font-family:ui-monospace,monospace;font-size:.82rem;color:var(--accent2);word-break:break-all}
+  footer{margin-top:56px;color:var(--dim);font-size:.85rem;border-top:1px solid var(--line);padding-top:18px}
+  a{color:var(--accent)}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Shinux Repository</h1>
+  <p class="lead">A signed package repository for <strong>dnf</strong> (Fedora, RHEL, CentOS, Rocky, Alma)
+     and <strong>apt</strong> (Debian, Ubuntu, Mint).</p>
+
+  <h2>1 &middot; Add the repository</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true"  data-panel="p-dnf">Fedora / RHEL</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="p-apt">Debian / Ubuntu</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="p-sh">One-liner</button>
+  </div>
+
+  <div class="card" id="p-dnf">
+<pre><code>sudo rpm --import https://abdallah-shehawey.github.io/shinux/RPM-GPG-KEY-shinux
+sudo dnf install -y https://abdallah-shehawey.github.io/shinux/rpm/shinux-release-1.0-1.noarch.rpm</code></pre>
+    <p class="lead">Drops <code>/etc/yum.repos.d/shinux.repo</code> and the signing key.</p>
+  </div>
+
+  <div class="card" id="p-apt" hidden>
+<pre><code>sudo install -d -m 0755 /etc/apt/keyrings
+sudo curl -fsSL https://abdallah-shehawey.github.io/shinux/shinux.gpg -o /etc/apt/keyrings/shinux.gpg
+sudo curl -fsSL https://abdallah-shehawey.github.io/shinux/shinux.sources -o /etc/apt/sources.list.d/shinux.sources
+sudo apt update</code></pre>
+  </div>
+
+  <div class="card" id="p-sh" hidden>
+<pre><code>curl -fsSL https://abdallah-shehawey.github.io/shinux/install.sh | sudo sh</code></pre>
+    <p class="lead">Detects dnf or apt and does the right thing. Read it first if you would rather not pipe to a shell.</p>
+  </div>
+
+  <h2>2 &middot; Install a package</h2>
+  <div class="card">
+<pre><code>sudo dnf install hello-shinux     <span style="color:#5d7186"># Fedora / RHEL</span>
+sudo apt install hello-shinux     <span style="color:#5d7186"># Debian / Ubuntu</span></code></pre>
+  </div>
+
+  <h2>Available packages</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>Package</th><th>Version</th><th>Format</th><th>Summary</th></tr></thead>
+      <tbody><tr><td><code>hello-shinux</code></td><td>1.0.0-1</td><td><span class="badge rpm">rpm</span> noarch</td><td>Demo package shipped from the Shinux repository</td></tr><tr><td><code>shinux-release</code></td><td>1.0-1</td><td><span class="badge rpm">rpm</span> noarch</td><td>Shinux Repository configuration and GPG key</td></tr><tr><td><code>hello-shinux</code></td><td>1.0.0-1</td><td><span class="badge deb">deb</span> all</td><td>Demo package shipped from the Shinux repository</td></tr><tr><td><code>shinux-archive-keyring</code></td><td>1.0-1</td><td><span class="badge deb">deb</span> all</td><td>Shinux Repository apt sources and signing key</td></tr></tbody>
+    </table>
+  </div>
+
+  <h2>Signing key</h2>
+  <div class="card">
+    <p class="lead">Every package and both metadata indexes are signed with:</p>
+    <p class="fpr">4470 3730 C834 546C BF4C DA30 D031 8B20 00CA C20A</p>
+    <p class="lead"><a href="RPM-GPG-KEY-shinux">RPM-GPG-KEY-shinux</a> (armored, for rpm)
+       &middot; <a href="shinux.gpg">shinux.gpg</a> (binary, for apt <code>Signed-By</code>)</p>
+  </div>
+
+  <footer>
+    Maintained by Abdallah Shehawey &middot;
+    <a href="https://github.com/abdallah-shehawey/shinux">source on GitHub</a>
+  </footer>
+</div>
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(o => {
+      const on = o === t;
+      o.setAttribute('aria-selected', on);
+      document.getElementById(o.dataset.panel).hidden = !on;
+    });
+  }));
+</script>
+</body>
+</html>

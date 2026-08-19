@@ -1,0 +1,31 @@
+Origin: shinux
+Label: Shinux Repository
+Suite: stable
+Codename: stable
+Version: 1.0
+Architectures: amd64 arm64
+Components: main
+Description: Shinux Repository for Debian and Ubuntu
+Date: Wed, 19 Aug 2026 15:49:47 GMT
+Acquire-By-Hash: no
+MD5Sum:
+ 76f08f754a666515c7c71c8e1381afc5             1454 main/binary-amd64/Packages
+ a38b0fffcec8d936cfe182fb0ac0569f              748 main/binary-amd64/Packages.gz
+ bdcb893411140d7398acd97d7ccb0698               92 main/binary-amd64/Release
+ 76f08f754a666515c7c71c8e1381afc5             1454 main/binary-arm64/Packages
+ a38b0fffcec8d936cfe182fb0ac0569f              748 main/binary-arm64/Packages.gz
+ cf63e6a0569722b3dc2ec789c7d6ae15               92 main/binary-arm64/Release
+SHA1:
+ a91831ce0e522981b7b339cfadb422e7f2f15d38             1454 main/binary-amd64/Packages
+ dc01e84c13e0159fb56de3923402524b6e36853e              748 main/binary-amd64/Packages.gz
+ f022ecfc8842ddcf944b34cd3632ad8207d2e654               92 main/binary-amd64/Release
+ a91831ce0e522981b7b339cfadb422e7f2f15d38             1454 main/binary-arm64/Packages
+ dc01e84c13e0159fb56de3923402524b6e36853e              748 main/binary-arm64/Packages.gz
+ 677b4c33a1dd3c54ab2be2c45f18e0ae872931e1               92 main/binary-arm64/Release
+SHA256:
+ 86cce7ecba5609842bc6e83716de4fbae65761359c71cda709f3f71ce8ab1486             1454 main/binary-amd64/Packages
+ 713cf7ad1980d138fca51ffddd470a9ea5f39a73a87e4c9246c6f49e4be6a4fb              748 main/binary-amd64/Packages.gz
+ f57a70d4a8de8466bf7e7d774d37859c6e435835f874b18e41413576214db3f0               92 main/binary-amd64/Release
+ 86cce7ecba5609842bc6e83716de4fbae65761359c71cda709f3f71ce8ab1486             1454 main/binary-arm64/Packages
+ 713cf7ad1980d138fca51ffddd470a9ea5f39a73a87e4c9246c6f49e4be6a4fb              748 main/binary-arm64/Packages.gz
+ 96d03ea79553536ca778ccf8533350a7e872f3e06eba3522a8e59245b8fca65a               92 main/binary-arm64/Release

@@ -1,0 +1,6 @@
+Types: deb
+URIs: https://abdallah-shehawey.github.io/shinux/deb
+Suites: stable
+Components: main
+Architectures: amd64 arm64
+Signed-By: /etc/apt/keyrings/shinux.gpg

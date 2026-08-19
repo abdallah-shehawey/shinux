@@ -1,0 +1,6 @@
+build/
+.gnupg/
+private-key.asc
+*.log
+
+.tools/
