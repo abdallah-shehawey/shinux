@@ -4,3 +4,4 @@ private-key.asc
 *.log
 
 .tools/
+.fuse_hidden*
