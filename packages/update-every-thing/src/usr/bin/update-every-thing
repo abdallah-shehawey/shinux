@@ -196,13 +196,14 @@ retry_command() {
             return 0
         fi
 
-        printf '%s[%s]%s %s (attempt %d/%d, exit %d)\n' \
-            "$C_FAIL" "$MARK_FAIL" "$C_RESET" "$name" "$attempt" "$max" "$status"
-        attempt=$(( attempt + 1 ))
-
-        if (( attempt <= max )); then
+        if (( attempt < max )); then
+            printf '%s[%s]%s %s (attempt %d/%d, exit %d)\n' \
+                "$C_FAIL" "$MARK_FAIL" "$C_RESET" "$name" "$attempt" "$max" "$status"
             printf '%s   retrying in %ds...%s\n' "$C_DIM" "$RETRY_DELAY" "$C_RESET"
             sleep "$RETRY_DELAY"
+            attempt=$(( attempt + 1 ))
+        else
+            break
         fi
     done
 
