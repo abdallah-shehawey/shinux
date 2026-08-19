@@ -1,0 +1,14 @@
+#compdef update-every-thing
+# zsh completion for update-every-thing
+
+_update-every-thing() {
+  _arguments -s -S \
+    '(-c --retries)'{-c,--retries}'[attempts per failing step]:count:(1 2 3 5 10)' \
+    '--with-nvidia[update NVIDIA and CUDA packages too]' \
+    '--color[colourise output]:when:(always never auto)' \
+    '--no-color[never colourise output]' \
+    '(- *)'{-V,--version}'[print version and exit]' \
+    '(- *)'{-h,--help}'[show help and exit]'
+}
+
+_update-every-thing "$@"

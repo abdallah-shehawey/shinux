@@ -8,7 +8,7 @@ _antigravity_update() {
         -d|--dir) _filedir -d; return ;;
     esac
     COMPREPLY=($(compgen -W \
-        '-c --check -n --dry-run -f --force -k --keep -d --dir -V --version -h --help' \
+        '-c --check -d --dir -n --dry-run -f --force -k --keep -y --yes --desktop --no-desktop -V --version -h --help' \
         -- "$cur"))
 }
 complete -F _antigravity_update antigravity-update

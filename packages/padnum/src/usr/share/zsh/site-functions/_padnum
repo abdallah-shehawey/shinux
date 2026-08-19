@@ -1,0 +1,25 @@
+#compdef padnum
+# zsh completion for padnum
+
+_padnum() {
+  local -a exts
+  _arguments -s -S \
+    '(-p --padding)'{-p,--padding}'[fixed padding width]:digits:(1 2 3 4 5)' \
+    '--sep[separator between number and name]:separator:(" " - _ .)' \
+    '--ext[only files with this extension]:extension:->exts' \
+    '(-n --dry-run)'{-n,--dry-run}'[show what would be renamed]' \
+    '--undo[undo the last N operations]::levels:(1 2 3)' \
+    '--history[show the undo history]' \
+    '(- *)'{-V,--version}'[print version and exit]' \
+    '(- *)'{-h,--help}'[show help and exit]'
+
+  case "$state" in
+    exts)
+      # Offer the extensions actually present in this directory.
+      exts=(${(u)${(f)"$(ls -1 2>/dev/null)"}##*.})
+      _describe -t extensions 'extension' exts && return 0
+      ;;
+  esac
+}
+
+_padnum "$@"

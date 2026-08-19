@@ -1,0 +1,15 @@
+#compdef vidtime
+# zsh completion for vidtime
+
+_vidtime() {
+  _arguments -s -S \
+    '(-r --recursive)'{-r,--recursive}'[descend into directories]' \
+    '(-t --total)'{-t,--total}'[print only the total]' \
+    '(-s --seconds)'{-s,--seconds}'[print raw seconds]' \
+    '--no-color[never colourise output]' \
+    '(- *)'{-V,--version}'[print version and exit]' \
+    '(- *)'{-h,--help}'[show help and exit]' \
+    '*:media file or directory:_files'
+}
+
+_vidtime "$@"

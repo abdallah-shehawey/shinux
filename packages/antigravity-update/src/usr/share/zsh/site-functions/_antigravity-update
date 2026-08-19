@@ -1,0 +1,18 @@
+#compdef antigravity-update
+# zsh completion for antigravity-update
+
+_antigravity-update() {
+  _arguments -s -S \
+    '(-c --check)'{-c,--check}'[report versions and exit]' \
+    '(-d --dir)'{-d,--dir}'[install directory]:directory:_files -/' \
+    '(-n --dry-run)'{-n,--dry-run}'[everything except installing]' \
+    '(-f --force)'{-f,--force}'[reinstall even when current]' \
+    '(-k --keep)'{-k,--keep}'[keep the downloaded archive]' \
+    '(-y --yes)'{-y,--yes}'[do not ask anything]' \
+    '(--no-desktop)--desktop[only rebuild the launcher, icon and links]' \
+    '(--desktop)--no-desktop[leave desktop integration alone]' \
+    '(- *)'{-V,--version}'[print version and exit]' \
+    '(- *)'{-h,--help}'[show help and exit]'
+}
+
+_antigravity-update "$@"

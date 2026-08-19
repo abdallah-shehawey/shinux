@@ -19,6 +19,13 @@ export OUT_DIR="${BUILD_DIR}/testsite"
 source "$(dirname "$0")/config.sh"   # re-derive RPM_DIR/DEB_DIR under the new OUT_DIR
 
 rm -rf "${OUT_DIR}"
+mkdir -p "${OUT_DIR}"
+# The exported public key lives in docs/; the throwaway tree needs its own copy
+# before the release packages can be generated against it.
+cp "${ROOT_DIR}/docs/RPM-GPG-KEY-${REPO_ID}" "${OUT_DIR}/" 2>/dev/null \
+  || die "no exported key in docs/; run scripts/gpg-setup.sh first"
+cp "${ROOT_DIR}/docs/${REPO_ID}.gpg" "${OUT_DIR}/"
+
 info "publishing a throwaway repository at ${BASE_URL}"
 "${ROOT_DIR}/scripts/build.sh"    >/dev/null
 "${ROOT_DIR}/scripts/make-repo.sh" >/dev/null
@@ -32,29 +39,86 @@ curl -fsS "${BASE_URL}/index.html" >/dev/null || die "local http server did not 
 case "$family" in
   fedora)
     image="registry.fedoraproject.org/fedora:44"
-    script='set -eux
+    script='set -eu
       rpm --import '"${BASE_URL}"'/RPM-GPG-KEY-'"${REPO_ID}"'
       dnf install -y '"${BASE_URL}"'/rpm/'"$(cd "${RPM_DIR}" && ls -1 ${REPO_ID}-release-*.rpm | sort -V | tail -1)"'
       dnf -q repolist '"${REPO_ID}"'
-      dnf install -y hello-'"${REPO_ID}"'
-      hello-'"${REPO_ID}"' --version
+      dnf install -y -q man-db bash-completion >/dev/null
+
+      echo "### installing every package from the repository"
+      dnf install -y '"${REPO_ID}"'-scripts
+
+      echo "### the metapackage pulled in its dependencies"
+      rpm -q vidtime padnum meet hashnum dlup antigravity-update update-every-thing
+
+      echo "### signature on an installed package"
+      rpm -q --qf "%{NAME}: %{RSAHEADER:pgpsig}\n" vidtime
+
+      echo "### every command answers --version and --help"
+      for c in vidtime padnum meet hashnum dlup antigravity-update update-every-thing; do
+        "$c" --version
+        "$c" --help >/dev/null
+      done
+
+      echo "### man pages are installed and readable"
+      for c in vidtime padnum meet hashnum dlup antigravity-update update-every-thing; do
+        man -w "$c" >/dev/null
+      done
+
+      echo "### bash completions are installed"
+      ls /usr/share/bash-completion/completions/ | sort
+
+      echo "### update-every-thing detects the right package manager"
+      update-every-thing --help | grep -i "dnf/yum or apt"
+
+      echo "### a command actually runs"
       hello-'"${REPO_ID}"'
-      rpm -qi hello-'"${REPO_ID}"' | grep -E "Signature|Version"'
+      cd /tmp && mkdir -p pn && cd pn && touch "1 a.txt" "2 b.txt" "10 c.txt"
+      padnum && ls -1'
     ;;
   debian)
-    image="docker.io/library/debian:12"
-    script='set -eux
+    image="docker.io/library/ubuntu:24.04"
+    script='set -eu
       export DEBIAN_FRONTEND=noninteractive
       apt-get update -qq
-      apt-get install -y -qq curl ca-certificates gnupg >/dev/null
-      install -d -m 0755 /etc/apt/keyrings
-      curl -fsSL '"${BASE_URL}"'/'"${REPO_ID}"'.gpg -o /etc/apt/keyrings/'"${REPO_ID}"'.gpg
-      curl -fsSL '"${BASE_URL}"'/'"${REPO_ID}"'.sources -o /etc/apt/sources.list.d/'"${REPO_ID}"'.sources
+      apt-get install -y -qq curl ca-certificates gnupg man-db bash-completion >/dev/null
+
+      echo "### adding the repository the one-command way"
+      curl -fsSL '"${BASE_URL}"'/'"${REPO_ID}"'-keyring.deb -o /tmp/keyring.deb
+      apt-get install -y /tmp/keyring.deb
       apt-get update
-      apt-get install -y '"${REPO_ID}"'-archive-keyring hello-'"${REPO_ID}"'
-      hello-'"${REPO_ID}"' --version
+
+      echo "### the Release file verified against the pinned key"
+      apt-cache policy | grep -A1 '"${REPO_ID}"' | head -4
+
+      echo "### installing every package from the repository"
+      apt-get install -y '"${REPO_ID}"'-scripts
+
+      echo "### the metapackage pulled in its dependencies"
+      dpkg -l vidtime padnum meet hashnum dlup antigravity-update update-every-thing \
+        | awk "/^ii/ { print \$2, \$3 }"
+
+      echo "### every command answers --version and --help"
+      for c in vidtime padnum meet hashnum dlup antigravity-update update-every-thing; do
+        "$c" --version
+        "$c" --help >/dev/null
+      done
+
+      echo "### man pages are installed and readable"
+      for c in vidtime padnum meet hashnum dlup antigravity-update update-every-thing; do
+        man -w "$c" >/dev/null
+      done
+
+      echo "### bash completions are installed"
+      ls /usr/share/bash-completion/completions/ | sort
+
+      echo "### update-every-thing picked apt, not dnf"
+      update-every-thing --help | grep -i "dnf/yum or apt"
+
+      echo "### a command actually runs"
       hello-'"${REPO_ID}"'
-      apt-cache policy hello-'"${REPO_ID}"''
+      cd /tmp && mkdir -p pn && cd pn && touch "1 a.txt" "2 b.txt" "10 c.txt"
+      padnum && ls -1'
     ;;
   *) die "unknown family '${family}' (expected fedora or debian)" ;;
 esac

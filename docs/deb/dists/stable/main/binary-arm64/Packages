@@ -1,23 +1,46 @@
 Package: antigravity-update
-Version: 1.1.0-1
+Version: 1.2.0-1
 Architecture: all
 Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
-Installed-Size: 22
+Installed-Size: 32
 Depends: bash, curl, jq, tar, rsync, grep, gawk | mawk, sudo, coreutils
 Section: devel
 Priority: optional
 Homepage: https://github.com/abdallah-shehawey/shinux
-Filename: pool/main/a/antigravity-update/antigravity-update_1.1.0-1_all.deb
-Size: 5812
-MD5sum: a77796fc13daae57f87015e6ccd19dce
-SHA1: 84eed9de5996acd4e228f1a9735b003f0d58c3d9
-SHA256: 034e786e620dbd73c14eb15c9a6f799d457417b4f84845adb6b763ca964031ae
-Description: Update a local Antigravity IDE installation
- Compares the installed Antigravity IDE against the newest build published
- on the site and, when the site is ahead, downloads it resumably, verifies
- its size and archive integrity, and rsyncs it into place. Preserves files
- the IDE writes itself and restores the setuid Chromium sandbox. Use --check
- to ask without installing.
+Filename: pool/main/a/antigravity-update/antigravity-update_1.2.0-1_all.deb
+Size: 9260
+MD5sum: 32498d70065bc251c2fce1e1b46e7684
+SHA1: aaa0ac3a24bb4a80cf2829b7ab7aa60e06830b26
+SHA256: d9a1f1ee088d6fd8b9d3e96ea250d585ed1dfbc13aa56b6c7c4dd9b1198a32bf
+Description: Install or update Antigravity IDE, wherever it lives
+ Discovers where Antigravity IDE is installed rather than assuming a path,
+ and updates it in place. If it is not installed, offers to install it and
+ asks where. Downloads resumably, verifies size and archive integrity before
+ trusting the download, and rebuilds the desktop entry, icon and launchers
+ afterwards so the application shows up properly in the overview. Uses sudo
+ only when the target really needs it.
+
+Package: antigravity-update
+Version: 1.3.0-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 36
+Depends: bash, curl, jq, tar, rsync, grep, gawk | mawk, sudo, coreutils
+Section: devel
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/a/antigravity-update/antigravity-update_1.3.0-1_all.deb
+Size: 9720
+MD5sum: b71fb3c5353947c049a54600784e0797
+SHA1: 503da608076ab217656056bafea42957e0080b07
+SHA256: 7159835e84deb5a1c76be5ee11cf9008fffed95820a77a10507d7c6c7bbfa617
+Description: Install or update Antigravity IDE, wherever it lives
+ Discovers where Antigravity IDE is installed rather than assuming a path,
+ and updates it in place. If it is not installed, offers to install it and
+ asks where. Downloads resumably, verifies size and archive integrity before
+ trusting the download, and rebuilds the desktop entry, icon and launchers
+ afterwards so the application shows up properly in the overview. Uses sudo
+ only when the target really needs it.
 
 Package: dlup
 Version: 1.0.0-1
@@ -40,6 +63,27 @@ Description: Download media with yt-dlp and push it straight to an rclone remote
  commented list file, supports cookie files for sites that need a signed-in
  session, and keeps going when one URL fails.
 
+Package: dlup
+Version: 1.1.0-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 26
+Depends: bash, yt-dlp, rclone, coreutils
+Section: net
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/d/dlup/dlup_1.1.0-1_all.deb
+Size: 6668
+MD5sum: f7c1e09d95c62456e2dba14fb707f74b
+SHA1: b6f1a591ec7c763b0afee3663367ce006402e65e
+SHA256: 486e958716afcc748cccbeb2d5ea7691ecfabc917e21dbbb30a4333e9d6346bd
+Description: Download media with yt-dlp and push it straight to an rclone remote
+ Downloads each URL with yt-dlp into its own staging directory, uploads it
+ to an rclone remote, and deletes the local copy before moving on, so a long
+ list of recordings never fills the disk. Reads URLs from arguments or a
+ commented list file, supports cookie files for sites that need a signed-in
+ session, and keeps going when one URL fails.
+
 Package: hashnum
 Version: 1.0.0-1
 Architecture: all
@@ -55,6 +99,27 @@ Size: 4468
 MD5sum: 67857f0020e4c6bdfb51305d0e707b92
 SHA1: 0747ca3030f2079ff86e12fc032eab98a7e5c027
 SHA256: 9bab7fe0d244d37227e09607b58585b1ba0918fc4c15f4c4a23b77801af8b454
+Description: Move a #N tag to the front of a filename
+ Turns 'Some Long Title #12.mp4' into '#12 Some Long Title.mp4', so a
+ directory of exports sorts by number instead of by title. Tidies the
+ whitespace the moved tag leaves behind, skips files without a tag, and
+ never overwrites an existing name. Pairs with padnum for zero-padding.
+
+Package: hashnum
+Version: 1.1.0-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 21
+Depends: bash, coreutils
+Suggests: padnum
+Section: utils
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/h/hashnum/hashnum_1.1.0-1_all.deb
+Size: 4680
+MD5sum: 17843ca146cc5771663569a07cb2975f
+SHA1: 2989287c1f8221e739e6ebd633e91cab77c4a463
+SHA256: 9b15448addb306a95e46fc94833694c4b3274c6966886e56d1fe4c243d809018
 Description: Move a #N tag to the front of a filename
  Turns 'Some Long Title #12.mp4' into '#12 Some Long Title.mp4', so a
  directory of exports sorts by number instead of by title. Tidies the
@@ -101,6 +166,27 @@ Description: Open a saved meeting link by name
  offers a picker, using fzf when available and a plain numbered menu
  otherwise. Any URL works; nothing about it is Google-specific.
 
+Package: meet
+Version: 1.2.0-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 25
+Depends: bash, gawk | mawk, xdg-utils
+Recommends: fzf
+Section: utils
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/m/meet/meet_1.2.0-1_all.deb
+Size: 5836
+MD5sum: 934e76b824103f128b892b41963c8ddd
+SHA1: 681ddb5327128a968ef420f28e53754ad8eb9d5c
+SHA256: 5258f42ca281ff5bab5c9b41db81412c211039d425ac6ec2186d4709f1e58abd
+Description: Open a saved meeting link by name
+ Keeps a short list of meeting URLs under names you choose, so a recurring
+ call is 'meet standup' rather than a bookmark hunt. With no arguments it
+ offers a picker, using fzf when available and a plain numbered menu
+ otherwise. Any URL works; nothing about it is Google-specific.
+
 Package: padnum
 Version: 1.1.0-1
 Architecture: all
@@ -115,6 +201,27 @@ Size: 6232
 MD5sum: 0c35fccb6eac135d7048f95bc477af08
 SHA1: 97993f0ca1a8fb93512102c4292b29e5bc85b673
 SHA256: e2a171464226c1e143f0631e8b30bea3b73d131928b3387091c552642c301ca0
+Description: Zero-pad the numeric prefix of filenames, with undo
+ Renames the files in the current directory so their leading numbers share a
+ width, turning 1, 2, ... 10 into 01, 02, ... 10 so they sort correctly. The
+ rest of each name is preserved byte for byte, including Arabic text and
+ spaces. Supports a dry run, a chosen separator, an extension filter and
+ multi-level undo.
+
+Package: padnum
+Version: 1.2.0-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 27
+Depends: bash, coreutils, sed, gawk | mawk, less
+Section: utils
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/p/padnum/padnum_1.2.0-1_all.deb
+Size: 6764
+MD5sum: 070a5a0eec0f0514fcedd01219dd3d2b
+SHA1: f617446a1f40b0fd88a04f6edeef7144c9bf8a94
+SHA256: 6395348d91e3fc4eefa9a2677ca62f2a0e1eb08ba7e064990b4eef0166d70d42
 Description: Zero-pad the numeric prefix of filenames, with undo
  Renames the files in the current directory so their leading numbers share a
  width, turning 1, 2, ... 10 into 01, 02, ... 10 so they sort correctly. The
@@ -146,20 +253,66 @@ Version: 1.0.0-1
 Architecture: all
 Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
 Installed-Size: 8
-Depends: vidtime, padnum, meet, hashnum, dlup, antigravity-update
+Depends: vidtime, padnum, meet, hashnum, dlup, antigravity-update, update-every-thing
 Section: metapackages
 Priority: optional
 Homepage: https://github.com/abdallah-shehawey/shinux
 Filename: pool/main/s/shinux-scripts/shinux-scripts_1.0.0-1_all.deb
-Size: 1992
-MD5sum: e1cfde633c6cc2ace169d9afdd95d288
-SHA1: dc4016f011fe712e1fa10a1e51847a3e2cbd3c1c
-SHA256: 4325d38e769f2458e193fff812877b2bdee01f704c99c2a06aa08a5f629984f3
+Size: 2004
+MD5sum: 1fe5e4e5d79d073a49885f3774af3d8a
+SHA1: 56f8b309ebc9e8ec11da7e2c5ce8902f3970188f
+SHA256: f5f56c23130bcd27502a3f986979410254e04b4fa22a13292e5e230f975b8cf3
 Description: Every command from the Shinux repository, in one install
  A metapackage that pulls in every command published in the Shinux
  repository. It contains no files of its own: install it to get the lot, or
  install the individual packages if you only want some of them. Removing it
  leaves the commands installed; remove them by name.
+
+Package: update-every-thing
+Version: 2.0.0-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 31
+Depends: bash, sudo, coreutils
+Recommends: fwupd, flatpak, antigravity-update
+Section: admin
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/u/update-every-thing/update-every-thing_2.0.0-1_all.deb
+Size: 8640
+MD5sum: e85929e5f69d16274c34d14ed33a3fb2
+SHA1: a688c9746f52a274e5d36a0160d58a10c3c4a38e
+SHA256: e5122a7967d025643f151e9ae91505f857004c4d6b520a904a628aff13ec9c09
+Description: Run every system update in one pass, with a summary
+ Detects dnf, yum or apt and runs the right update commands for that system,
+ then firmware, Flatpak and Snap, and prints one summary of what succeeded,
+ failed or was skipped. A failing step is retried a bounded number of times
+ and then given up on, so the run always reaches the end. NVIDIA packages
+ are held back unless asked for, and any hold this run adds is released
+ again even if you interrupt it.
+
+Package: update-every-thing
+Version: 2.1.0-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 36
+Depends: bash, sudo, coreutils
+Recommends: fwupd, flatpak, antigravity-update
+Section: admin
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/u/update-every-thing/update-every-thing_2.1.0-1_all.deb
+Size: 9584
+MD5sum: 28f27c5a1ae2f41818b936e309290072
+SHA1: 6af364fa540a1286749f6beea1c275ac551612c8
+SHA256: 222c135aff9d539507ec5d2bfdd15ce99bc2e5ecc07d8e86f774afd6b6953527
+Description: Run every system update in one pass, with a summary
+ Detects dnf, yum or apt and runs the right update commands for that system,
+ then firmware, Flatpak and Snap, and prints one summary of what succeeded,
+ failed or was skipped. A failing step is retried a bounded number of times
+ and then given up on, so the run always reaches the end. NVIDIA packages
+ are held back unless asked for, and any hold this run adds is released
+ again even if you interrupt it.
 
 Package: vidtime
 Version: 1.1.0-1
@@ -175,6 +328,26 @@ Size: 4888
 MD5sum: 42c83787762b1802f5555486e6072faf
 SHA1: 28657ff6c56ae8802aee2d1d4c531dec0949a499
 SHA256: fd883305d39222cd5ecaa26deb5becb651f818248fd7b5b2c1942748ee9dac25
+Description: Print how long media files run, and their total
+ Reads the duration of each file with ffprobe and prints it as HH:MM:SS,
+ followed by the total. Handles whole directories with -r, prints a bare
+ total with -t for scripting, and keeps going when one file turns out not to
+ be media.
+
+Package: vidtime
+Version: 1.2.0-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 22
+Depends: bash, ffmpeg
+Section: video
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/v/vidtime/vidtime_1.2.0-1_all.deb
+Size: 5128
+MD5sum: 7bbbf5b2afffbfc86dac0630e06ba37b
+SHA1: 1c35b6eb81405afdc4281d858d3531c745d03da1
+SHA256: 8ab45f026cd09c56d991193f7a6ec2b256582884887a1cca7ef528707031b22a
 Description: Print how long media files run, and their total
  Reads the duration of each file with ffprobe and prints it as HH:MM:SS,
  followed by the total. Handles whole directories with -r, prints a bare

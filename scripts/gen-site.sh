@@ -189,18 +189,44 @@ EOF
 chmod +x "${OUT_DIR}/uninstall.sh"
 
 # ------------------------------------------------------------- package table -
-rows=""
+# One row per package, listing which formats carry it, rather than one row per
+# built artefact -- otherwise every package appears twice.
+declare -A pkg_version=() pkg_summary=() pkg_formats=()
 shopt -s nullglob
+
 for f in "${RPM_DIR}"/*.rpm; do
-  n="$(rpm -qp --qf '%{NAME}|%{VERSION}-%{RELEASE}|%{ARCH}|%{SUMMARY}' "$f" 2>/dev/null)" || continue
-  IFS='|' read -r name ver arch summ <<< "$n"
-  rows+="<tr><td><code>${name}</code></td><td>${ver}</td><td><span class=\"badge rpm\">rpm</span> ${arch}</td><td>${summ}</td></tr>"
+  n="$(rpm -qp --qf '%{NAME}|%{VERSION}-%{RELEASE}|%{SUMMARY}' "$f" 2>/dev/null)" || continue
+  IFS='|' read -r name ver summ <<< "$n"
+  # Keep only the newest build of each package.
+  if [ -z "${pkg_version[$name]:-}" ] || \
+     [ "$(printf '%s\n%s\n' "${pkg_version[$name]}" "$ver" | sort -V | tail -1)" = "$ver" ]; then
+    pkg_version["$name"]="$ver"
+    pkg_summary["$name"]="$summ"
+  fi
+  case " ${pkg_formats[$name]:-} " in *" rpm "*) ;; *) pkg_formats["$name"]="${pkg_formats[$name]:-} rpm" ;; esac
 done
+
 for f in "${DEB_DIR}"/pool/*/*/*/*.deb; do
   name="$(dpkg-deb -f "$f" Package 2>/dev/null)" || continue
-  ver="$(dpkg-deb -f "$f" Version)"; arch="$(dpkg-deb -f "$f" Architecture)"
+  ver="$(dpkg-deb -f "$f" Version)"
   summ="$(dpkg-deb -f "$f" Description | head -1)"
-  rows+="<tr><td><code>${name}</code></td><td>${ver}</td><td><span class=\"badge deb\">deb</span> ${arch}</td><td>${summ}</td></tr>"
+  if [ -z "${pkg_version[$name]:-}" ]; then
+    pkg_version["$name"]="$ver"
+    pkg_summary["$name"]="$summ"
+  fi
+  case " ${pkg_formats[$name]:-} " in *" deb "*) ;; *) pkg_formats["$name"]="${pkg_formats[$name]:-} deb" ;; esac
+done
+
+# The two repo-configuration packages are install plumbing, not something to
+# browse; they get their own section above.
+rows=""
+for name in $(printf '%s\n' "${!pkg_version[@]}" | LC_ALL=C sort); do
+  case "$name" in "${REPO_ID}-release"|"${REPO_ID}-archive-keyring") continue ;; esac
+  badges=""
+  for fmt in ${pkg_formats[$name]}; do
+    badges+="<span class=\"badge ${fmt}\">${fmt}</span> "
+  done
+  rows+="<tr><td><code>${name}</code></td><td>${pkg_version[$name]}</td><td>${badges}</td><td>${pkg_summary[$name]}</td></tr>"
 done
 
 cat > "${OUT_DIR}/index.html" <<HTMLEOF
@@ -309,6 +335,10 @@ sudo apt update</code></pre>
 
   <h2>Available packages</h2>
   <div class="card">
+    <p class="lead">Each one is a separate install — take only what you want.
+       Every command ships a man page, <code>--help</code>, <code>--version</code>
+       and bash completion, and pulls in its own dependencies.
+       <code>${REPO_ID}-scripts</code> installs the lot.</p>
     <table>
       <thead><tr><th>Package</th><th>Version</th><th>Format</th><th>Summary</th></tr></thead>
       <tbody>${rows}</tbody>
