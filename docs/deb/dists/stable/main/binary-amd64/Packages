@@ -239,10 +239,10 @@ Section: misc
 Priority: optional
 Homepage: https://github.com/abdallah-shehawey/shinux
 Filename: pool/main/s/shinux-archive-keyring/shinux-archive-keyring_1.0-1_all.deb
-Size: 2644
-MD5sum: bc0035cf8b10965b6fc3af653860d013
-SHA1: 51467db41deaa7f54bd5b7679a5e7a2e329146f7
-SHA256: 48881ff4aac50d634005306ab097525bb6f614a552f7b209da7d2f7d8fb33d39
+Size: 2628
+MD5sum: 9f1997ff68104897a40066935c2e6678
+SHA1: 5f367fd6408fa8009dcea9ec3135bfc27e25fe0c
+SHA256: da27b1261d7102f3a24fedbeccc7086998e31c82a6c45525419b0869cd36f2b5
 Description: Shinux Repository apt sources and signing key
  Installs the apt sources entry for the Shinux Repository together with the
  public GPG key used to sign its Release file. Install this once, then
@@ -306,6 +306,29 @@ Size: 9584
 MD5sum: 28f27c5a1ae2f41818b936e309290072
 SHA1: 6af364fa540a1286749f6beea1c275ac551612c8
 SHA256: 222c135aff9d539507ec5d2bfdd15ce99bc2e5ecc07d8e86f774afd6b6953527
+Description: Run every system update in one pass, with a summary
+ Detects dnf, yum or apt and runs the right update commands for that system,
+ then firmware, Flatpak and Snap, and prints one summary of what succeeded,
+ failed or was skipped. A failing step is retried a bounded number of times
+ and then given up on, so the run always reaches the end. NVIDIA packages
+ are held back unless asked for, and any hold this run adds is released
+ again even if you interrupt it.
+
+Package: update-every-thing
+Version: 2.2.0-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 37
+Depends: bash, sudo, coreutils
+Recommends: fwupd, flatpak, antigravity-update
+Section: admin
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/u/update-every-thing/update-every-thing_2.2.0-1_all.deb
+Size: 9916
+MD5sum: ac7990292958000afb47f75c25bf93df
+SHA1: cdfb69dcb5a0f7eca8cc84f91d7dd6c0b7ace990
+SHA256: 86084a34931b6116120822a5faa2d7b6c5a94aa6c067521866da2c510eb42a07
 Description: Run every system update in one pass, with a summary
  Detects dnf, yum or apt and runs the right update commands for that system,
  then firmware, Flatpak and Snap, and prints one summary of what succeeded,

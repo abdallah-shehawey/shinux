@@ -43,10 +43,12 @@ case "$family" in
       rpm --import '"${BASE_URL}"'/RPM-GPG-KEY-'"${REPO_ID}"'
       dnf install -y '"${BASE_URL}"'/rpm/'"$(cd "${RPM_DIR}" && ls -1 ${REPO_ID}-release-*.rpm | sort -V | tail -1)"'
       dnf -q repolist '"${REPO_ID}"'
-      dnf install -y -q man-db bash-completion >/dev/null
+      # The Fedora container image sets tsflags=nodocs, which strips man pages
+      # on install. Turn that off so the test actually checks them.
+      dnf install -y -q --setopt=tsflags= man-db bash-completion >/dev/null
 
       echo "### installing every package from the repository"
-      dnf install -y '"${REPO_ID}"'-scripts
+      dnf install -y --setopt=tsflags= '"${REPO_ID}"'-scripts hello-'"${REPO_ID}"'
 
       echo "### the metapackage pulled in its dependencies"
       rpm -q vidtime padnum meet hashnum dlup antigravity-update update-every-thing
@@ -92,7 +94,7 @@ case "$family" in
       apt-cache policy | grep -A1 '"${REPO_ID}"' | head -4
 
       echo "### installing every package from the repository"
-      apt-get install -y '"${REPO_ID}"'-scripts
+      apt-get install -y '"${REPO_ID}"'-scripts hello-'"${REPO_ID}"'
 
       echo "### the metapackage pulled in its dependencies"
       dpkg -l vidtime padnum meet hashnum dlup antigravity-update update-every-thing \

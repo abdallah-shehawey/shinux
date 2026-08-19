@@ -38,10 +38,19 @@ Flatpak applications.
 .IP 5. 4
 Snap packages, where snap exists.
 .IP 6. 4
+Ubuntu Pro security status, reported only. It covers the ESM archives a plain
+full\-upgrade does not, and whether to enable them is a decision, not something
+a bulk update should make for you.
+.IP 7. 4
+Drivers through
+.BR ubuntu\-drivers ,
+and only with
+.BR \-\-with\-nvidia .
+.IP 8. 4
 GNOME extensions \(em listed only. The distribution\-packaged ones were already
 upgraded in step 2, and running the package manager again for them just
 re\-downloads every repository to print "Nothing to do".
-.IP 7. 4
+.IP 9. 4
 Cleanup: autoremove, and clearing the package cache.
 .SS NVIDIA
 NVIDIA and CUDA packages are left alone by default, because replacing the
