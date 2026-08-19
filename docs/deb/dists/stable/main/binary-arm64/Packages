@@ -1,17 +1,17 @@
 Package: hello-shinux
 Version: 1.0.0-1
 Architecture: all
-Maintainer: Abdallah Shehawey <sa9290100@gmail.com>
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
 Installed-Size: 10
 Depends: bash
 Section: utils
 Priority: optional
 Homepage: https://github.com/abdallah-shehawey/shinux
 Filename: pool/main/h/hello-shinux/hello-shinux_1.0.0-1_all.deb
-Size: 2300
-MD5sum: 22cdde130c7e1cdcd0a3d35fd9c86748
-SHA1: 2132d9be8bfe9df882124fbd29fa58e84bdd1e76
-SHA256: 8993efc96c1b6df38f3a1367257ae0aa601850959993384bb8a465002bf32ac2
+Size: 2296
+MD5sum: 084b4d7176e8f218e14298cec1baa13f
+SHA1: 83c673a82981046e9075ac8b3b1cbb0540ef7dd1
+SHA256: 9ba057d4e0723b2bb2a89eb901f59f6cd2afbb8f0590f54bebf271f2f4a730fb
 Description: Demo package shipped from the Shinux repository
  A tiny shell utility that prints a greeting. It exists to verify that
  adding the Shinux repository and installing from it works on both dnf- and
@@ -20,17 +20,17 @@ Description: Demo package shipped from the Shinux repository
 Package: shinux-archive-keyring
 Version: 1.0-1
 Architecture: all
-Maintainer: Abdallah Shehawey <sa9290100@gmail.com>
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
 Installed-Size: 12
 Depends: gnupg | gpgv
 Section: misc
 Priority: optional
 Homepage: https://github.com/abdallah-shehawey/shinux
 Filename: pool/main/s/shinux-archive-keyring/shinux-archive-keyring_1.0-1_all.deb
-Size: 2648
-MD5sum: 61a5d21998d56b03b97264e2936760d3
-SHA1: 127acb8029b41ef75be37d1374aba596de999e22
-SHA256: 5a3623a61665211a8d072dfb94dd5fcd27e03acad2331349bc17faa1eadcee1c
+Size: 2644
+MD5sum: bc0035cf8b10965b6fc3af653860d013
+SHA1: 51467db41deaa7f54bd5b7679a5e7a2e329146f7
+SHA256: 48881ff4aac50d634005306ab097525bb6f614a552f7b209da7d2f7d8fb33d39
 Description: Shinux Repository apt sources and signing key
  Installs the apt sources entry for the Shinux Repository together with the
  public GPG key used to sign its Release file. Install this once, then

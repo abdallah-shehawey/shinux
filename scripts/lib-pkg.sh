@@ -88,7 +88,7 @@ build_rpm() {
     [ -z "$rel" ] && continue
     is_system_dir "$rel" || files+="%dir \"${rel}\"
 "
-  done < <(find "$stage/src" -type d | sort)
+  done < <(find "$stage/src" -type d | LC_ALL=C sort)
   while IFS= read -r f; do
     local rel="${f#"$stage/src"}"
     case "$rel" in
@@ -99,7 +99,7 @@ build_rpm() {
       *)          files+="\"${rel}\"
 " ;;
     esac
-  done < <(find "$stage/src" \( -type f -o -type l \) | sort)
+  done < <(find "$stage/src" \( -type f -o -type l \) | LC_ALL=C sort)
 
   local lic_line="" doc_line=""
   [ -f "$stage/LICENSE" ]   && lic_line="%license LICENSE"
@@ -203,11 +203,11 @@ build_deb() {
   } > "$work/DEBIAN/control"
 
   # Everything under /etc is a conffile, per Debian policy.
-  ( cd "$work" && find etc -type f 2>/dev/null || true ) | sed 's|^|/|' | sort > "$work/DEBIAN/conffiles"
+  ( cd "$work" && find etc -type f 2>/dev/null || true ) | sed 's|^|/|' | LC_ALL=C sort > "$work/DEBIAN/conffiles"
   [ -s "$work/DEBIAN/conffiles" ] || rm -f "$work/DEBIAN/conffiles"
 
   ( cd "$work" && find . -path ./DEBIAN -prune -o -type f -print \
-      | sed 's|^\./||' | sort | xargs -r md5sum ) > "$work/DEBIAN/md5sums"
+      | sed 's|^\./||' | LC_ALL=C sort | xargs -r md5sum ) > "$work/DEBIAN/md5sums"
 
   # Optional maintainer scripts, copied straight from the package directory.
   for s in preinst postinst prerm postrm triggers; do

@@ -14,7 +14,7 @@ BASE_URL="${BASE_URL:-https://${GITHUB_USER}.github.io/${GITHUB_REPO}}"
 
 # Identity burned into the signing key and into every package's Maintainer field.
 MAINTAINER_NAME="Abdallah Shehawey"
-MAINTAINER_EMAIL="sa9290100@gmail.com"
+MAINTAINER_EMAIL="shehawey9@gmail.com"
 GPG_KEY_UID="${REPO_NAME} Signing Key <${MAINTAINER_EMAIL}>"
 
 # apt architectures the Release file advertises. Packages marked
