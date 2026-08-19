@@ -30,7 +30,7 @@ jobs:
             git createrepo_c rpm-build rpm-sign dpkg gnupg2 python3 \
             tar gzip xz findutils diffutils
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Trust the workspace
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"

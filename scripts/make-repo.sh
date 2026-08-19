@@ -58,6 +58,14 @@ for f in "${BUILD_DIR}/out/rpm"/*.rpm; do
   tool rpmsign --define "_gpg_name ${FPR}" --addsign "$dest" >/dev/null
 done
 
+# A fresh clone gives every rpm the checkout time as its mtime, and
+# createrepo_c writes that into primary.xml. Pin each file's mtime to the
+# BUILDTIME recorded inside it so the metadata is identical on any machine.
+for f in "${RPM_DIR}"/*.rpm; do
+  bt="$(rpm -qp --qf '%{BUILDTIME}' "$f" 2>/dev/null)" || continue
+  [ -n "$bt" ] && touch -d "@${bt}" "$f"
+done
+
 repomd="${RPM_DIR}/repodata/repomd.xml"
 before_md="$(sha256sum "${repomd}" 2>/dev/null | cut -d' ' -f1 || true)"
 

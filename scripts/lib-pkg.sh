@@ -173,7 +173,18 @@ build_deb() {
   [ -f "$stage/README.md" ] && cp "$stage/README.md" "$docdir/"
   [ -f "$stage/LICENSE" ]   && cp "$stage/LICENSE"   "$docdir/copyright"
 
-  local size; size="$(du -sk --exclude=DEBIAN "$work" | cut -f1)"
+  # Deliberately not `du -sk`: that counts allocated blocks, so the same files
+  # yield a different size on ext4 than on the CI overlayfs, and the package
+  # would be rebuilt on every machine. Sum apparent sizes, KiB-rounded per file,
+  # which is what dpkg means by Installed-Size.
+  # Every file counts as at least one KiB block and every directory as one,
+  # which is what du would report on a 1 KiB filesystem.
+  local size
+  size="$(find "$work" -path "$work/DEBIAN" -prune -o \
+              -type f -printf 'f %s\n' -o -type d -printf 'd 0\n' -o -type l -printf 'l 0\n' \
+          | awk '$1 == "f" { total += ($2 > 1024) ? int(($2 + 1023) / 1024) : 1 }
+                 $1 == "d" { total += 1 }
+                 END { print total + 0 }')"
 
   {
     echo "Package: ${PKG_NAME}"
