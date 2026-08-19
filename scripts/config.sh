@@ -25,7 +25,7 @@ DEB_COMPONENT="main"
 
 # --- derived paths, do not edit -------------------------------------------
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUILD_DIR="${ROOT_DIR}/build"
+BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build}"
 OUT_DIR="${OUT_DIR:-${ROOT_DIR}/docs}"   # published by GitHub Pages (main branch, /docs)
 RPM_DIR="${OUT_DIR}/rpm"
 DEB_DIR="${OUT_DIR}/deb"

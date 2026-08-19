@@ -9,6 +9,21 @@ source "$(dirname "$0")/lib-tools.sh"
 
 [ -d "${BUILD_DIR}/out" ] || die "nothing built; run scripts/build.sh first"
 
+# The release packages bake BASE_URL in at build time, so publishing artefacts
+# that were built for a different URL ships a .repo pointing somewhere else.
+# That is exactly what a leftover test build does, and it is silent, so check.
+release_rpm="$(ls -1 "${BUILD_DIR}/out/rpm/${REPO_ID}-release-"*.rpm 2>/dev/null | sort -V | tail -1)"
+if [ -n "${release_rpm}" ]; then
+  built_url="$(rpm2cpio "${release_rpm}" 2>/dev/null \
+                | cpio -i --to-stdout --quiet "./etc/yum.repos.d/${REPO_ID}.repo" 2>/dev/null \
+                | awk -F= '/^baseurl=/ { print $2; exit }')"
+  case "${built_url}" in
+    "${BASE_URL}/rpm/") ;;
+    "") ;;   # older build without the source repo stanza; let it through
+    *) die "build/out was built for ${built_url%/rpm/}, not ${BASE_URL} - run scripts/build.sh again" ;;
+  esac
+fi
+
 export GNUPGHOME="${SIGN_GNUPGHOME:-${GNUPGHOME_DIR}}"
 FPR="$(gpg_fpr || true)"
 [ -n "${FPR}" ] || die "no signing key; run scripts/gpg-setup.sh first"

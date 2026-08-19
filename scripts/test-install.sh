@@ -16,6 +16,11 @@ source "$(dirname "$0")/lib-tools.sh"
 eng="$(container_engine)" || die "podman or docker is required for the install test"
 export BASE_URL="http://127.0.0.1:${PORT}"
 export OUT_DIR="${BUILD_DIR}/testsite"
+# Its own build tree as well: the packages built here bake the throwaway
+# BASE_URL into shinux-release and shinux-archive-keyring, and leaving those in
+# the shared build/out means the next real publish ships a .repo pointing at
+# localhost.
+export BUILD_DIR="${BUILD_DIR}/testbuild"
 source "$(dirname "$0")/config.sh"   # re-derive RPM_DIR/DEB_DIR under the new OUT_DIR
 
 rm -rf "${OUT_DIR}"
