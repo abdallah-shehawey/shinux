@@ -239,10 +239,10 @@ Section: misc
 Priority: optional
 Homepage: https://github.com/abdallah-shehawey/shinux
 Filename: pool/main/s/shinux-archive-keyring/shinux-archive-keyring_1.0-1_all.deb
-Size: 2628
-MD5sum: 9f1997ff68104897a40066935c2e6678
-SHA1: 5f367fd6408fa8009dcea9ec3135bfc27e25fe0c
-SHA256: da27b1261d7102f3a24fedbeccc7086998e31c82a6c45525419b0869cd36f2b5
+Size: 2636
+MD5sum: be6b4f13bf4e97be6ec973fe60ad1f5b
+SHA1: 5212b62659ea401a38adebfe2ade653a4fd0fb86
+SHA256: b2c0c26d3b223a53b7b974fb8073901e85e0a25ba563f2fb1a19affecdb3e2ac
 Description: Shinux Repository apt sources and signing key
  Installs the apt sources entry for the Shinux Repository together with the
  public GPG key used to sign its Release file. Install this once, then
