@@ -9,9 +9,9 @@ Priority: optional
 Homepage: https://github.com/abdallah-shehawey/shinux
 Filename: pool/main/h/hello-shinux/hello-shinux_1.0.0-1_all.deb
 Size: 2300
-MD5sum: a6141c379597e84d6dd8b3d47a79de19
-SHA1: a0f979949f24b3fdc68b51abae94d4508afde7d4
-SHA256: 9a6f0d0ece2ba8e38f2b54efded3b53f0ecb4977dd044b5ec5e8998a89be7ad2
+MD5sum: 22cdde130c7e1cdcd0a3d35fd9c86748
+SHA1: 2132d9be8bfe9df882124fbd29fa58e84bdd1e76
+SHA256: 8993efc96c1b6df38f3a1367257ae0aa601850959993384bb8a465002bf32ac2
 Description: Demo package shipped from the Shinux repository
  A tiny shell utility that prints a greeting. It exists to verify that
  adding the Shinux repository and installing from it works on both dnf- and
