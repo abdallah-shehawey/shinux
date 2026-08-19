@@ -3,18 +3,18 @@
 padnum \- zero\-pad the numeric prefix of filenames, with undo
 .SH SYNOPSIS
 .B padnum
-[\fB\-p\fR \fIN\fR] [\fB\-\-sep\fR \fISTRING\fR] [\fB\-\-ext\fR \fIEXT\fR] [\fB\-n\fR]
+[\fB\-p\fR \fIN\fR] [\fB\-\-sep\fR \fISTRING\fR] [\fB\-\-ext\fR \fIEXT\fR] [\fB\-n\fR] [\fIDIRECTORY\fR]
 .br
 .B padnum
-\fB\-\-undo\fR [\fIN\fR]
+\fB\-\-undo\fR [\fIN\fR] [\fIDIRECTORY\fR]
 .br
 .B padnum
-\fB\-\-history\fR
+\fB\-\-history\fR [\fB\-\-no\-color\fR] [\fIDIRECTORY\fR]
 .SH DESCRIPTION
 .B padnum
-works on the files in the current directory. For every filename that starts
-with digits it zero\-pads that number to a common width and leaves the rest of
-the name exactly as it was \(em Arabic text, spaces, underscores and dots all
+works on the files in the specified \fIDIRECTORY\fR (or the current working directory if omitted).
+For every filename that starts with digits it zero\-pads that number to a common width and leaves
+the rest of the name exactly as it was \(em Arabic text, spaces, underscores and dots all
 survive untouched.
 .PP
 So \fB1 intro.mp4\fR, \fB2 setup.mp4\fR ... \fB10 wrap.mp4\fR become
@@ -29,10 +29,13 @@ Without
 .BR \-p ,
 the width is detected from the largest number present: 9 files gives width 1,
 10 files gives width 2, 100 gives 3.
+.SS Target directory
+If a \fIDIRECTORY\fR argument is provided (relative or absolute), \fBpadnum\fR operates on the
+files and undo history inside that directory.
 .SS Undo
 Every run records what it renamed in
 .B .padnum.undo
-in the working directory, keeping up to 10 generations. A dry run records
+in the target directory, keeping up to 10 generations. A dry run records
 nothing.
 .SH OPTIONS
 .TP
@@ -57,17 +60,20 @@ to see what an undo would do.
 .B \-\-history
 Show the undo history, oldest first, in a pager.
 .TP
-.B \-\-version
+.B \-\-no\-color
+Disable ANSI colour formatting in history output.
+.TP
+.BR \-V ", " \-\-version
 Print the version and exit.
 .TP
 .BR \-h ", " \-\-help
 Show a usage summary and exit.
 .SH FILES
 .TP
-.B ./.padnum.undo
-Undo history for the directory it sits in. Delete it to forget the history.
+.B .padnum.undo
+Undo history stored inside the target directory. Delete it to forget the history.
 .SH EXAMPLES
-Pad using the detected width:
+Pad using the detected width in the current directory:
 .PP
 .RS
 .EX
@@ -75,11 +81,19 @@ padnum
 .EE
 .RE
 .PP
-Force three digits, only for mp4 files, and look before you leap:
+Pad files inside a specific directory:
 .PP
 .RS
 .EX
-padnum \-n \-p 3 \-\-ext mp4
+padnum /path/to/folder
+.EE
+.RE
+.PP
+Force three digits, only for mp4 files, inside a subfolder:
+.PP
+.RS
+.EX
+padnum \-n \-p 3 \-\-ext mp4 ./videos
 .EE
 .RE
 .PP
@@ -87,8 +101,8 @@ Use a hyphen instead of a space, then change your mind:
 .PP
 .RS
 .EX
-padnum \-\-sep "\-"
-padnum \-\-undo
+padnum \-\-sep "\-" /media/music
+padnum \-\-undo /media/music
 .EE
 .RE
 .SH EXIT STATUS
@@ -100,7 +114,7 @@ Success.
 No undo history, or no more undo steps available.
 .TP
 .B 2
-Bad usage.
+Bad usage, unknown option, or inaccessible directory.
 .SH SEE ALSO
 .BR mv (1),
 .BR rename (1)

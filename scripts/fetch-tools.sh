@@ -10,7 +10,7 @@ source "$(dirname "$0")/config.sh"
 
 TOOLROOT="${ROOT_DIR}/.tools/root"
 PKGDIR="${ROOT_DIR}/.tools/pkgs"
-NEEDED_RPMS="createrepo_c createrepo_c-libs drpm rpm-sign"
+NEEDED_RPMS="createrepo_c createrepo_c-libs drpm rpm-sign dpkg"
 
 command -v dnf >/dev/null 2>&1 || die "fetch-tools.sh needs dnf (Fedora/RHEL host)"
 command -v rpm2cpio >/dev/null 2>&1 || die "fetch-tools.sh needs rpm2cpio"
@@ -18,7 +18,7 @@ command -v cpio >/dev/null 2>&1 || die "fetch-tools.sh needs cpio"
 
 mkdir -p "${PKGDIR}" "${TOOLROOT}"
 info "downloading ${NEEDED_RPMS} into .tools/pkgs (no root required)"
-( cd "${PKGDIR}" && dnf download --arch "$(uname -m)" ${NEEDED_RPMS} >/dev/null )
+dnf download --nogpgcheck --destdir "${PKGDIR}" --arch "$(uname -m)" ${NEEDED_RPMS} >/dev/null
 
 info "unpacking into .tools/root"
 for f in "${PKGDIR}"/*.rpm; do

@@ -241,5 +241,14 @@ build_deb() {
   mkdir -p "${BUILD_DIR}/out/deb"
   local out="${BUILD_DIR}/out/deb/${PKG_NAME}_${PKG_VERSION}-${PKG_RELEASE}_${DEB_ARCH}.deb"
   info "dpkg-deb ${PKG_NAME}_${PKG_VERSION}-${PKG_RELEASE}_${DEB_ARCH}"
-  tool dpkg-deb --root-owner-group -Zxz --build "$work" "$out" >/dev/null
+
+  local deb_stage; deb_stage="$(mktemp -d)"
+  cp -a "$work/." "$deb_stage/"
+  chmod -R u=rwX,go=rX "$deb_stage"
+  chmod 0755 "$deb_stage/DEBIAN"
+  [ -f "$deb_stage/DEBIAN/control" ] && chmod 0644 "$deb_stage/DEBIAN/control"
+  [ -f "$deb_stage/DEBIAN/md5sums" ] && chmod 0644 "$deb_stage/DEBIAN/md5sums"
+
+  tool dpkg-deb --root-owner-group -Zxz --build "$deb_stage" "$out" >/dev/null
+  rm -rf "$deb_stage"
 }

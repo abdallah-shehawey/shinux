@@ -19,8 +19,17 @@ _padnum() {
             COMPREPLY=($(compgen -W '1 2 3' -- "$cur")); return ;;
     esac
 
-    COMPREPLY=($(compgen -W \
-        '-p --padding --sep --ext -n --dry-run --undo --history --version -h --help' \
-        -- "$cur"))
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=($(compgen -W \
+            '-p --padding --sep --ext -n --dry-run --undo --history --no-color -V --version -h --help' \
+            -- "$cur"))
+        return
+    fi
+
+    if declare -F _filedir >/dev/null 2>&1; then
+        _filedir -d
+    else
+        COMPREPLY=($(compgen -d -- "$cur"))
+    fi
 }
-complete -F _padnum padnum
+complete -F _padnum -o filenames -o dirnames padnum
