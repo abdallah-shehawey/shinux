@@ -229,6 +229,27 @@ Description: Zero-pad the numeric prefix of filenames, with undo
  spaces. Supports a dry run, a chosen separator, an extension filter and
  multi-level undo.
 
+Package: padnum
+Version: 1.3.0-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 30
+Depends: bash, coreutils, sed, gawk | mawk, less
+Section: utils
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/p/padnum/padnum_1.3.0-1_all.deb
+Size: 7384
+MD5sum: 3af1d41e8542a805697b8908f7ed51d4
+SHA1: 40999147567f95dd9ed26f465d9bc66ee387f6c2
+SHA256: aa2a04727a873008dfe087ed0ef94eae79086beb6396fbd603c7e459dad57696
+Description: Zero-pad the numeric prefix of filenames, with undo
+ Renames the files in the current or target directory so their leading
+ numbers share a width, turning 1, 2, ... 10 into 01, 02, ... 10 so they
+ sort correctly. The rest of each name is preserved byte for byte, including
+ Arabic text and spaces. Supports target directory, a dry run, a chosen
+ separator, an extension filter and multi-level undo.
+
 Package: shinux-archive-keyring
 Version: 1.0-1
 Architecture: all
@@ -329,6 +350,29 @@ Size: 9916
 MD5sum: ac7990292958000afb47f75c25bf93df
 SHA1: cdfb69dcb5a0f7eca8cc84f91d7dd6c0b7ace990
 SHA256: 86084a34931b6116120822a5faa2d7b6c5a94aa6c067521866da2c510eb42a07
+Description: Run every system update in one pass, with a summary
+ Detects dnf, yum or apt and runs the right update commands for that system,
+ then firmware, Flatpak and Snap, and prints one summary of what succeeded,
+ failed or was skipped. A failing step is retried a bounded number of times
+ and then given up on, so the run always reaches the end. NVIDIA packages
+ are held back unless asked for, and any hold this run adds is released
+ again even if you interrupt it.
+
+Package: update-every-thing
+Version: 2.2.1-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 37
+Depends: bash, sudo, coreutils
+Recommends: fwupd, flatpak, antigravity-update
+Section: admin
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/u/update-every-thing/update-every-thing_2.2.1-1_all.deb
+Size: 9920
+MD5sum: ecca99970ec5cc764433df6967d1b219
+SHA1: 11ff7203c15c87cf2657a67e2eb94ad718384054
+SHA256: 9aed47e9dbeed01765b439a8fae3f47c8a0307d81f82595b76ecd515c7513f3c
 Description: Run every system update in one pass, with a summary
  Detects dnf, yum or apt and runs the right update commands for that system,
  then firmware, Flatpak and Snap, and prints one summary of what succeeded,
