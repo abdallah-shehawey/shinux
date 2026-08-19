@@ -1,0 +1,92 @@
+.TH UPDATE\-EVERY\-THING 1 "2026" "update-every-thing @VERSION@" "User Commands"
+.SH NAME
+update\-every\-thing \- run every Fedora update in one pass
+.SH SYNOPSIS
+.B update\-every\-thing
+[\fB\-c\fR \fIN\fR] [\fB\-\-with\-nvidia\fR]
+.SH DESCRIPTION
+Runs the updates a Fedora desktop needs, in an order that only refreshes
+repository metadata once, and prints a summary of what happened at the end.
+.PP
+The steps are:
+.IP 1. 4
+Antigravity IDE, via
+.BR antigravity\-update (1)
+if it is installed.
+.IP 2. 4
+System packages, with the run's single
+.B dnf
+metadata refresh.
+.IP 3. 4
+Firmware, through
+.BR fwupdmgr (1).
+.IP 4. 4
+Flatpak applications.
+.IP 5. 4
+GNOME extensions \(em listed only. The RPM\-packaged ones were already
+upgraded in step 2, and running dnf again for them just re\-downloads every
+repository to print "Nothing to do".
+.IP 6. 4
+Cleanup:
+.B dnf autoremove
+and
+.BR "dnf clean all" .
+.PP
+Nothing aborts the run. A step that fails is retried a bounded number of times
+and then given up on, so the run always reaches the end and you get one report
+instead of discovering a failure three commands later. A step whose tool is not
+installed is skipped and recorded as such.
+.PP
+Neither stdout nor stderr is redirected. That is deliberate: dnf and flatpak
+draw progress on stderr and size it from the terminal, so piping either stream
+costs them the terminal and their progress bars come out duplicated and
+wrapped.
+.PP
+The sudo timestamp is refreshed in the background for the length of the run, so
+no password prompt appears in the middle of a long download.
+.PP
+Ctrl\-C stops the run and still prints the summary, marking the step that was
+running as interrupted.
+.SH OPTIONS
+.TP
+.BR \-c ", " \-\-retries " " \fIN\fR
+Attempt each failing step up to \fIN\fR times before giving up on it and moving
+to the next. Default \fB5\fR.
+.TP
+.B \-\-with\-nvidia
+Update NVIDIA and CUDA packages too. They are excluded by default because
+replacing the driver under a running session can break it.
+.TP
+.BR \-V ", " \-\-version
+Print the version and exit.
+.TP
+.BR \-h ", " \-\-help
+Show a usage summary and exit.
+.SH EXIT STATUS
+.TP
+.B 0
+Every step that ran succeeded.
+.TP
+.B 1
+At least one step failed.
+.TP
+.B 2
+Bad usage.
+.TP
+.B 130
+Interrupted with Ctrl\-C.
+.SH EXAMPLES
+.RS
+.EX
+update\-every\-thing
+update\-every\-thing \-c 3
+update\-every\-thing \-\-with\-nvidia
+.EE
+.RE
+.SH SEE ALSO
+.BR dnf (8),
+.BR flatpak (1),
+.BR fwupdmgr (1),
+.BR antigravity\-update (1)
+.SH AUTHOR
+Written by @MAINTAINER@.

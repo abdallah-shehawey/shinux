@@ -1,0 +1,86 @@
+.TH ANTIGRAVITY\-UPDATE 1 "2026" "antigravity-update @VERSION@" "User Commands"
+.SH NAME
+antigravity\-update \- update a local Antigravity IDE installation
+.SH SYNOPSIS
+.B antigravity\-update
+[\fIOPTION\fR]...
+.SH DESCRIPTION
+Compares the version installed under the install directory with the newest one
+published on \fBantigravity.google\fR. If the site is ahead, the new build is
+downloaded, verified and rsynced into place.
+.PP
+The download is resumable, so an interrupted run can simply be repeated. Before
+the archive is trusted its size is checked against what the server reported and
+its table of contents is listed, because a truncated resumable download
+otherwise looks like a success.
+.PP
+Installing writes to a system directory, so
+.BR sudo (8)
+may prompt for a password. Files the IDE writes itself are preserved across the
+update, and the Chromium sandbox is restored to setuid root, without which the
+IDE refuses to start.
+.SH OPTIONS
+.TP
+.BR \-c ", " \-\-check
+Report the installed and available versions, then exit without changing
+anything. Exits \fB3\fR when an update is available, which makes it easy to
+drive from a script.
+.TP
+.BR \-n ", " \-\-dry\-run
+Do everything except the install itself: resolve, download, verify, extract.
+.TP
+.BR \-f ", " \-\-force
+Reinstall even when the installed version is already current.
+.TP
+.BR \-k ", " \-\-keep
+Keep the downloaded archive instead of deleting it once the install succeeds.
+.TP
+.BR \-d ", " \-\-dir " " \fIPATH\fR
+Install directory. Default \fB/usr/share/antigravity\-ide\fR.
+.TP
+.BR \-V ", " \-\-version
+Print the version and exit.
+.TP
+.BR \-h ", " \-\-help
+Show a usage summary and exit.
+.SH EXIT STATUS
+.TP
+.B 0
+Already up to date, or updated successfully.
+.TP
+.B 1
+Something went wrong.
+.TP
+.B 2
+Bad usage, or a required program is missing.
+.TP
+.B 3
+With
+.BR \-\-check :
+an update is available.
+.SH ENVIRONMENT
+.TP
+.B ANTIGRAVITY_INSTALL_DIR
+Same as
+.BR \-\-dir .
+.SH EXAMPLES
+Ask whether an update exists, without installing it:
+.PP
+.RS
+.EX
+antigravity\-update \-\-check
+.EE
+.RE
+.PP
+Only act when there is something to do:
+.PP
+.RS
+.EX
+antigravity\-update \-\-check || antigravity\-update
+.EE
+.RE
+.SH SEE ALSO
+.BR update\-every\-thing (1),
+.BR rsync (1)
+.SH AUTHOR
+Written by @MAINTAINER@.

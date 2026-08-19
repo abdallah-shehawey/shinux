@@ -120,6 +120,14 @@ if [ "${before}" != "${after}" ] || [ ! -f "${dists}/InRelease" ] || [ ! -f "${d
       -o "${dists}/InRelease" "${dists}/Release"
 fi
 
+# A stable, short path for the keyring package, so adding the repository on a
+# deb system is one command instead of four. The pool path carries the version
+# and the pool layout, which makes for a URL nobody can type.
+keyring="$(ls -1 "${DEB_DIR}/pool/${DEB_COMPONENT}"/*/"${REPO_ID}-archive-keyring"/*.deb 2>/dev/null | sort -V | tail -1)"
+if [ -n "${keyring}" ]; then
+  cp -f "${keyring}" "${OUT_DIR}/${REPO_ID}-keyring.deb"
+fi
+
 # ------------------------------------------------------------- landing page --
 "${ROOT_DIR}/scripts/gen-site.sh"
 

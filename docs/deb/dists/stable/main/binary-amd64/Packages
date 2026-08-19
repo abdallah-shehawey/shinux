@@ -1,3 +1,66 @@
+Package: antigravity-update
+Version: 1.1.0-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 22
+Depends: bash, curl, jq, tar, rsync, grep, gawk | mawk, sudo, coreutils
+Section: devel
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/a/antigravity-update/antigravity-update_1.1.0-1_all.deb
+Size: 5812
+MD5sum: a77796fc13daae57f87015e6ccd19dce
+SHA1: 84eed9de5996acd4e228f1a9735b003f0d58c3d9
+SHA256: 034e786e620dbd73c14eb15c9a6f799d457417b4f84845adb6b763ca964031ae
+Description: Update a local Antigravity IDE installation
+ Compares the installed Antigravity IDE against the newest build published
+ on the site and, when the site is ahead, downloads it resumably, verifies
+ its size and archive integrity, and rsyncs it into place. Preserves files
+ the IDE writes itself and restores the setuid Chromium sandbox. Use --check
+ to ask without installing.
+
+Package: dlup
+Version: 1.0.0-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 23
+Depends: bash, yt-dlp, rclone, coreutils
+Section: net
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/d/dlup/dlup_1.0.0-1_all.deb
+Size: 6244
+MD5sum: 87b51d649cd9d7740dceed9d4788440c
+SHA1: 0d4bec438fbb8fa35c64d7574e695fc3637f13e1
+SHA256: 91f310a3ab1c55ba487c8ace4e96e829621250c30bf1f1b5f2844eed7b13e78e
+Description: Download media with yt-dlp and push it straight to an rclone remote
+ Downloads each URL with yt-dlp into its own staging directory, uploads it
+ to an rclone remote, and deletes the local copy before moving on, so a long
+ list of recordings never fills the disk. Reads URLs from arguments or a
+ commented list file, supports cookie files for sites that need a signed-in
+ session, and keeps going when one URL fails.
+
+Package: hashnum
+Version: 1.0.0-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 18
+Depends: bash, coreutils
+Suggests: padnum
+Section: utils
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/h/hashnum/hashnum_1.0.0-1_all.deb
+Size: 4468
+MD5sum: 67857f0020e4c6bdfb51305d0e707b92
+SHA1: 0747ca3030f2079ff86e12fc032eab98a7e5c027
+SHA256: 9bab7fe0d244d37227e09607b58585b1ba0918fc4c15f4c4a23b77801af8b454
+Description: Move a #N tag to the front of a filename
+ Turns 'Some Long Title #12.mp4' into '#12 Some Long Title.mp4', so a
+ directory of exports sorts by number instead of by title. Tidies the
+ whitespace the moved tag leaves behind, skips files without a tag, and
+ never overwrites an existing name. Pairs with padnum for zero-padding.
+
 Package: hello-shinux
 Version: 1.0.0-1
 Architecture: all
@@ -17,6 +80,48 @@ Description: Demo package shipped from the Shinux repository
  adding the Shinux repository and installing from it works on both dnf- and
  apt-based systems.
 
+Package: meet
+Version: 1.1.0-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 21
+Depends: bash, gawk | mawk, xdg-utils
+Recommends: fzf
+Section: utils
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/m/meet/meet_1.1.0-1_all.deb
+Size: 5416
+MD5sum: eb951371bb39f26e80ad777580eb6ca8
+SHA1: 739c98e6a1123f36e321bf65477b44cb8052c962
+SHA256: 13ff8fbcef616ed495b60ff6793a70d9fa5f496044c1e2a5db8aea4607deb8ce
+Description: Open a saved meeting link by name
+ Keeps a short list of meeting URLs under names you choose, so a recurring
+ call is 'meet standup' rather than a bookmark hunt. With no arguments it
+ offers a picker, using fzf when available and a plain numbered menu
+ otherwise. Any URL works; nothing about it is Google-specific.
+
+Package: padnum
+Version: 1.1.0-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 24
+Depends: bash, coreutils, sed, gawk | mawk, less
+Section: utils
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/p/padnum/padnum_1.1.0-1_all.deb
+Size: 6232
+MD5sum: 0c35fccb6eac135d7048f95bc477af08
+SHA1: 97993f0ca1a8fb93512102c4292b29e5bc85b673
+SHA256: e2a171464226c1e143f0631e8b30bea3b73d131928b3387091c552642c301ca0
+Description: Zero-pad the numeric prefix of filenames, with undo
+ Renames the files in the current directory so their leading numbers share a
+ width, turning 1, 2, ... 10 into 01, 02, ... 10 so they sort correctly. The
+ rest of each name is preserved byte for byte, including Arabic text and
+ spaces. Supports a dry run, a chosen separator, an extension filter and
+ multi-level undo.
+
 Package: shinux-archive-keyring
 Version: 1.0-1
 Architecture: all
@@ -35,3 +140,43 @@ Description: Shinux Repository apt sources and signing key
  Installs the apt sources entry for the Shinux Repository together with the
  public GPG key used to sign its Release file. Install this once, then
  packages from the repository resolve like any other.
+
+Package: shinux-scripts
+Version: 1.0.0-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 8
+Depends: vidtime, padnum, meet, hashnum, dlup, antigravity-update
+Section: metapackages
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/s/shinux-scripts/shinux-scripts_1.0.0-1_all.deb
+Size: 1992
+MD5sum: e1cfde633c6cc2ace169d9afdd95d288
+SHA1: dc4016f011fe712e1fa10a1e51847a3e2cbd3c1c
+SHA256: 4325d38e769f2458e193fff812877b2bdee01f704c99c2a06aa08a5f629984f3
+Description: Every command from the Shinux repository, in one install
+ A metapackage that pulls in every command published in the Shinux
+ repository. It contains no files of its own: install it to get the lot, or
+ install the individual packages if you only want some of them. Removing it
+ leaves the commands installed; remove them by name.
+
+Package: vidtime
+Version: 1.1.0-1
+Architecture: all
+Maintainer: Abdallah Shehawey <shehawey9@gmail.com>
+Installed-Size: 19
+Depends: bash, ffmpeg
+Section: video
+Priority: optional
+Homepage: https://github.com/abdallah-shehawey/shinux
+Filename: pool/main/v/vidtime/vidtime_1.1.0-1_all.deb
+Size: 4888
+MD5sum: 42c83787762b1802f5555486e6072faf
+SHA1: 28657ff6c56ae8802aee2d1d4c531dec0949a499
+SHA256: fd883305d39222cd5ecaa26deb5becb651f818248fd7b5b2c1942748ee9dac25
+Description: Print how long media files run, and their total
+ Reads the duration of each file with ffprobe and prints it as HH:MM:SS,
+ followed by the total. Handles whole directories with -r, prints a bare
+ total with -t for scripting, and keeps going when one file turns out not to
+ be media.

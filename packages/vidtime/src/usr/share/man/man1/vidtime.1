@@ -1,0 +1,81 @@
+.TH VIDTIME 1 "2026" "vidtime @VERSION@" "User Commands"
+.SH NAME
+vidtime \- print how long media files run, and their total
+.SH SYNOPSIS
+.B vidtime
+[\fIOPTION\fR]... \fIFILE\fR...
+.br
+.B vidtime
+[\fIOPTION\fR]... \fB\-r\fR \fIDIRECTORY\fR...
+.SH DESCRIPTION
+.B vidtime
+reads the duration of each argument with
+.BR ffprobe (1)
+and prints it as \fBHH:MM:SS\fR, followed by the total of everything it
+could read.
+.PP
+Arguments that are not readable media are reported on standard error and
+skipped. The total is still printed for whatever did work, so one bad file
+in a directory does not cost you the answer.
+.SH OPTIONS
+.TP
+.BR \-r ", " \-\-recursive
+Descend into directories and time every file inside. Without this, a
+directory argument is reported as an error rather than silently ignored.
+.TP
+.BR \-t ", " \-\-total
+Print only the total, on one line, with nothing else. Useful in scripts.
+.TP
+.BR \-s ", " \-\-seconds
+Print raw seconds instead of \fBHH:MM:SS\fR.
+.TP
+.B \-\-no\-color
+Never colourise output. Colour is disabled automatically when standard
+output is not a terminal.
+.TP
+.BR \-V ", " \-\-version
+Print the version and exit.
+.TP
+.BR \-h ", " \-\-help
+Show a usage summary and exit.
+.SH EXIT STATUS
+.TP
+.B 0
+At least one file was timed.
+.TP
+.B 1
+Nothing could be timed.
+.TP
+.B 2
+Bad usage, or
+.B ffprobe
+is not installed.
+.SH EXAMPLES
+Time one file:
+.PP
+.RS
+.EX
+vidtime lecture01.mp4
+.EE
+.RE
+.PP
+Time a whole course and print only the total:
+.PP
+.RS
+.EX
+vidtime \-t \-r ~/Videos/course
+.EE
+.RE
+.PP
+Feed the total to another program:
+.PP
+.RS
+.EX
+vidtime \-t \-s \-r ~/Videos | xargs \-I{} echo "{} seconds"
+.EE
+.RE
+.SH SEE ALSO
+.BR ffprobe (1),
+.BR ffmpeg (1)
+.SH AUTHOR
+Written by @MAINTAINER@.

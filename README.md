@@ -1,29 +1,107 @@
-# shinux
+<h1 align="center">shinux</h1>
 
-A signed third-party package repository for **dnf** (Fedora, RHEL, CentOS, Rocky,
-Alma) and **apt** (Debian, Ubuntu, Mint), hosted for free on GitHub Pages.
+<p align="center">
+  A signed package repository for <b>dnf</b> and <b>apt</b>, hosted free on GitHub Pages.<br>
+  Add it once, then install and upgrade like any distribution package.
+</p>
 
-Users add it once, then install and upgrade your software exactly like any
-distribution package.
-
-```bash
-# Fedora / RHEL
-sudo rpm --import https://abdallah-shehawey.github.io/shinux/RPM-GPG-KEY-shinux
-sudo dnf install -y https://abdallah-shehawey.github.io/shinux/rpm/shinux-release-1.0-1.noarch.rpm
-sudo dnf install hello-shinux
-
-# Debian / Ubuntu
-sudo install -d -m 0755 /etc/apt/keyrings
-sudo curl -fsSL https://abdallah-shehawey.github.io/shinux/shinux.gpg \
-     -o /etc/apt/keyrings/shinux.gpg
-sudo curl -fsSL https://abdallah-shehawey.github.io/shinux/shinux.sources \
-     -o /etc/apt/sources.list.d/shinux.sources
-sudo apt update && sudo apt install hello-shinux
-```
+<p align="center">
+  <a href="https://abdallah-shehawey.github.io/shinux/"><img alt="repository" src="https://img.shields.io/badge/repo-abdallah--shehawey.github.io%2Fshinux-38bdf8"></a>
+  <img alt="formats" src="https://img.shields.io/badge/formats-rpm%20%7C%20deb-f59e0b">
+  <img alt="signed" src="https://img.shields.io/badge/packages-GPG%20signed-22c55e">
+  <img alt="license" src="https://img.shields.io/badge/license-MIT-64748b">
+</p>
 
 ---
 
-## How it is put together
+## Install
+
+One command, any distribution:
+
+```bash
+curl -fsSL https://abdallah-shehawey.github.io/shinux/install.sh | sudo sh
+```
+
+<details>
+<summary>Prefer to do it by hand?</summary>
+
+**Fedora · RHEL · CentOS · Rocky · Alma**
+
+```bash
+sudo dnf install -y https://abdallah-shehawey.github.io/shinux/rpm/shinux-release-1.0-1.noarch.rpm
+```
+
+**Debian · Ubuntu · Mint**
+
+```bash
+curl -fsSL https://abdallah-shehawey.github.io/shinux/shinux-keyring.deb -o /tmp/shinux-keyring.deb \
+  && sudo apt install -y /tmp/shinux-keyring.deb && sudo apt update
+```
+</details>
+
+Then install whatever you want:
+
+```bash
+sudo dnf install vidtime          # or: sudo apt install vidtime
+sudo dnf install shinux-scripts   # everything at once
+```
+
+## Uninstall
+
+```bash
+curl -fsSL https://abdallah-shehawey.github.io/shinux/uninstall.sh | sudo sh
+```
+
+That removes the repository and its key but leaves installed packages alone.
+Add `-s -- --purge` to remove those too:
+
+```bash
+curl -fsSL https://abdallah-shehawey.github.io/shinux/uninstall.sh | sudo sh -s -- --purge
+```
+
+<details>
+<summary>By hand</summary>
+
+**Fedora · RHEL**
+
+```bash
+sudo dnf remove shinux-release
+sudo rpm -e $(rpm -qa 'gpg-pubkey*' --qf '%{NAME}-%{VERSION}-%{RELEASE} %{SUMMARY}\n' \
+              | grep -i shinux | cut -d' ' -f1)
+sudo dnf clean all
+```
+
+**Debian · Ubuntu**
+
+```bash
+sudo apt purge shinux-archive-keyring
+sudo rm -f /etc/apt/sources.list.d/shinux.sources /etc/apt/keyrings/shinux.gpg
+sudo apt update
+```
+</details>
+
+## What is in it
+
+| Package | Command | What it does |
+|---|---|---|
+| `vidtime` | `vidtime` | How long media files run, and their total |
+| `padnum` | `padnum` | Zero-pad numeric filename prefixes, with undo |
+| `hashnum` | `hashnum` | Move a `#N` tag to the front of a filename |
+| `meet` | `meet` | Open a saved meeting link by name |
+| `dlup` | `dlup` | Download with yt-dlp, upload to an rclone remote |
+| `antigravity-update` | `antigravity-update` | Update a local Antigravity IDE install |
+| `update-every-thing` | `update-every-thing` | Every Fedora update in one pass (rpm only) |
+| `shinux-scripts` | — | Metapackage pulling in all of the above |
+
+Every command ships a man page, `-h/--help`, `--version` and bash completion,
+and declares its dependencies, so `dnf install meet` pulls in `fzf` and
+`xdg-utils` on its own.
+
+---
+
+## Maintaining the repository
+
+### Layout
 
 | Path | What it is |
 |---|---|
@@ -33,13 +111,13 @@ sudo apt update && sudo apt install hello-shinux
 | `.github/workflows/publish.yml` | Rebuilds and re-signs `docs/` on every push |
 
 One source tree produces both an `.rpm` and a `.deb`, so the two can never
-drift apart. `src/usr/bin/foo` becomes `/usr/bin/foo` in both formats.
+drift apart: `src/usr/bin/foo` becomes `/usr/bin/foo` in either format.
 
-`docs/` is committed on purpose: GitHub Pages serves it directly from `main`,
+`docs/` is committed on purpose. GitHub Pages serves it straight from `main`,
 and old package versions have to stay reachable so `dnf downgrade` and version
 pinning keep working.
 
-## One-time setup
+### One-time setup
 
 ```bash
 make key          # create the GPG signing key (docs/ gets the public half)
@@ -47,71 +125,72 @@ make publish      # build, sign, generate metadata
 git add -A && git commit -m "initial repository" && git push -u origin main
 ```
 
-Then, in the GitHub repository settings:
+Then in the GitHub repository settings:
 
-1. **Settings → Pages** → Source: *Deploy from a branch* → branch `main`, folder `/docs`.
+1. **Settings → Pages** → Source: *Deploy from a branch* → `main`, folder `/docs`.
 2. **Settings → Secrets and variables → Actions** → new secret `GPG_PRIVATE_KEY`,
-   pasting the whole contents of `private-key.asc`. Delete that file afterwards.
+   pasting all of `private-key.asc`. Delete that file afterwards.
 
-Back up `.gnupg/` somewhere safe. Losing the signing key means every existing
-user has to re-trust a new one.
+Back up `.gnupg/`. Losing the signing key means every existing user has to
+re-trust a new one.
 
-## Shipping an update
+### Shipping an update
 
-This is the part that makes it a real repository: bump the version, publish, and
-everyone who added the repo picks it up with a normal `dnf upgrade` / `apt upgrade`.
+Bump the version, publish, push. Everyone who added the repo picks it up with a
+normal `dnf upgrade` / `apt upgrade`.
 
 ```bash
-vim packages/hello-shinux/src/usr/bin/hello-shinux   # change the program
-make bump PKG=hello-shinux LEVEL=patch               # 1.0.0-1  ->  1.0.1-1
+$EDITOR packages/vidtime/src/usr/bin/vidtime
+make bump PKG=vidtime LEVEL=patch     # 1.1.0-1  ->  1.1.1-1
 make publish
-git add -A && git commit -m "hello-shinux 1.0.1" && git push
+git add -A && git commit -m "vidtime 1.1.1" && git push
 ```
 
-`LEVEL` is one of:
-
-| LEVEL | 1.2.3-4 becomes | use when |
+| `LEVEL` | `1.2.3-4` becomes | Use when |
 |---|---|---|
-| `release` (default) | `1.2.3-5` | only the packaging changed |
+| `release` *(default)* | `1.2.3-5` | only the packaging changed |
 | `patch` | `1.2.4-1` | bug fix |
 | `minor` | `1.3.0-1` | new feature, still compatible |
 | `major` | `2.0.0-1` | breaking change |
 | `2.5.0` | `2.5.0-1` | an exact version you pick |
 
-Both dnf and apt order these identically, so any bump is enough to trigger an
-upgrade. The old build stays in the pool; `make prune KEEP=3` trims the history
-when it gets long.
+dnf and apt order these identically, so any bump triggers an upgrade. The old
+build stays in the pool; `make prune KEEP=3` trims the history when it gets long.
 
-How fast users see it: dnf re-checks after `metadata_expire=6h` (or immediately
-on `dnf --refresh upgrade`), apt on the next `apt update`.
+How fast users see it: dnf re-checks after `metadata_expire=6h`, or immediately
+with `dnf --refresh upgrade`; apt on the next `apt update`.
 
-## Adding a new package
+> **Change a package without bumping it and clients that already cached the old
+> version will never see the change.** `make publish` warns when it spots this.
+
+### Adding a package
 
 ```bash
 mkdir -p packages/mytool/src/usr/bin
-cp /path/to/mytool packages/mytool/src/usr/bin/
-chmod +x packages/mytool/src/usr/bin/mytool
-cp packages/hello-shinux/metadata.env packages/mytool/metadata.env
-$EDITOR packages/mytool/metadata.env      # name, version, summary, deps
+install -m 0755 /path/to/mytool packages/mytool/src/usr/bin/
+cp packages/vidtime/metadata.env packages/mytool/metadata.env
+$EDITOR packages/mytool/metadata.env      # name, version, summary, dependencies
 make publish
 ```
 
-Anything you drop under `src/` is packaged at the matching absolute path:
-`src/usr/share/applications/mytool.desktop`, `src/etc/mytool.conf`, and so on.
-Files under `/etc` are automatically marked as config files in both formats, so
-a user's edits survive upgrades.
+Anything under `src/` is packaged at the matching absolute path:
 
-Inside any text file under `src/`, these placeholders are expanded at build
-time: `@VERSION@`, `@RELEASE@`, `@BASE_URL@`, `@REPO_ID@`, `@REPO_NAME@`,
+| Put it here | It lands at |
+|---|---|
+| `src/usr/bin/mytool` | `/usr/bin/mytool` |
+| `src/usr/share/man/man1/mytool.1` | compressed man page, both formats |
+| `src/usr/share/bash-completion/completions/mytool` | shell completion |
+| `src/etc/mytool.conf` | config file — user edits survive upgrades |
+
+These placeholders are expanded in every text file under `src/` at build time:
+`@VERSION@`, `@RELEASE@`, `@BASE_URL@`, `@REPO_ID@`, `@REPO_NAME@`,
 `@KEY_FPR@`, `@MAINTAINER@`.
 
-For a compiled program, set `RPM_ARCH="x86_64"` and `DEB_ARCH="amd64"` in
-`metadata.env` and put the built binary in `src/usr/bin/`.
+For a compiled program set `RPM_ARCH="x86_64"` and `DEB_ARCH="amd64"`. To ship
+only one format, set `PKG_FORMATS="rpm"`. Debian maintainer scripts go in
+`packages/<name>/debian/{preinst,postinst,prerm,postrm}`.
 
-Optional Debian maintainer scripts go in `packages/<name>/debian/`:
-`preinst`, `postinst`, `prerm`, `postrm`.
-
-## Testing before you push
+### Testing before you push
 
 ```bash
 make test          # both families
@@ -123,31 +202,45 @@ make serve         # browse docs/ at http://127.0.0.1:8099
 The tests publish to a throwaway tree served on `127.0.0.1`; `docs/` is never
 touched.
 
-## Requirements
+### Requirements
 
-`rpmbuild`, `dpkg-deb`, `gnupg2`, `python3`, and `createrepo_c` + `rpmsign`.
-Fedora does not install the last two by default:
+`rpmbuild`, `dpkg-deb`, `gnupg2`, `python3`, plus `createrepo_c` and `rpmsign`.
+Fedora ships neither of the last two by default:
 
 ```bash
 sudo dnf install createrepo_c rpm-sign
 ```
 
-If you would rather not install them, the scripts fall back to a rootless
-`podman`/`docker` container automatically — no sudo needed.
+If you would rather not, the scripts fetch them into `.tools/` with
+`dnf download` and unpack them there — no root needed. Failing that, they fall
+back to a rootless `podman` container.
 
-`apt-ftparchive` is deliberately not used: `scripts/gen-apt-metadata.py`
-generates the `Packages`/`Release` files directly, so the whole apt side builds
-on a Fedora host.
+`apt-ftparchive` is deliberately not used: `scripts/gen-apt-metadata.py` writes
+the `Packages` and `Release` files directly, so the apt half builds on a Fedora
+host with nothing but `dpkg-deb`.
 
-## Security model
+### Reproducibility
+
+`make publish` is idempotent — run it twice with no source change and `docs/`
+comes out byte-identical, so CI never commits noise. That needs care in three
+places, all of which are already handled and worth not undoing:
+
+- Package identity is fingerprinted from NEVRA, dependencies, scriptlets and
+  per-file digests, **not** the rpm header digest, which covers `BUILDTIME`.
+- `Installed-Size` is summed from apparent file sizes, not `du -sk`, which
+  counts allocated blocks and so differs between filesystems.
+- Every `sort` that feeds package contents runs under `LC_ALL=C`, and each
+  rpm's mtime is pinned to its own `BUILDTIME`.
+
+### Security
 
 - Every `.rpm` is signed, and so is `repodata/repomd.xml` — the `.repo` file
   sets both `gpgcheck=1` and `repo_gpgcheck=1`.
-- The apt `Release` file is signed both detached (`Release.gpg`) and inline
-  (`InRelease`), and the sources entry pins the key with `Signed-By:`, so this
-  key can only ever vouch for this one repository.
-- The private key never leaves `.gnupg/` locally and lives only in the
-  `GPG_PRIVATE_KEY` GitHub secret in CI. Both are git-ignored.
+- The apt `Release` file is signed detached (`Release.gpg`) and inline
+  (`InRelease`), and the sources entry pins the key with `Signed-By:`, so it can
+  only ever vouch for this one repository.
+- The private key never leaves `.gnupg/` locally and the `GPG_PRIVATE_KEY`
+  secret in CI. Both are git-ignored.
 
 ## License
 

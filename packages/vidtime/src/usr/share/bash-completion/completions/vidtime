@@ -1,0 +1,26 @@
+# bash completion for vidtime
+_vidtime() {
+    local cur prev
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=($(compgen -W \
+            '-r --recursive -t --total -s --seconds --no-color -V --version -h --help' \
+            -- "$cur"))
+        return
+    fi
+
+    # -r takes directories; everything else takes files.
+    local want_dirs=0 w
+    for w in "${COMP_WORDS[@]}"; do
+        [[ "$w" == "-r" || "$w" == "--recursive" ]] && want_dirs=1
+    done
+    if (( want_dirs )) && [[ "$prev" == "-r" || "$prev" == "--recursive" ]]; then
+        _filedir -d
+    else
+        _filedir
+    fi
+}
+complete -F _vidtime vidtime

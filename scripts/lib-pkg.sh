@@ -40,7 +40,13 @@ stage_package() {
   local stage="${BUILD_DIR}/stage/${PKG_NAME}"
   rm -rf "$stage"
   mkdir -p "$stage"
-  cp -a "${pkgdir}/src" "$stage/"
+  # A metapackage ships no files at all, and git cannot track an empty
+  # directory, so src/ is allowed to be absent.
+  if [ -d "${pkgdir}/src" ]; then
+    cp -a "${pkgdir}/src" "$stage/"
+  else
+    mkdir -p "$stage/src"
+  fi
   [ -f "${pkgdir}/LICENSE" ]   && cp "${pkgdir}/LICENSE"   "$stage/"
   [ -f "${pkgdir}/README.md" ] && cp "${pkgdir}/README.md" "$stage/"
 
@@ -92,11 +98,17 @@ build_rpm() {
   while IFS= read -r f; do
     local rel="${f#"$stage/src"}"
     case "$rel" in
-      /etc/pki/*) files+="\"${rel}\"
+      /etc/pki/*)          files+="\"${rel}\"
 " ;;
-      /etc/*)     files+="%config(noreplace) \"${rel}\"
+      /etc/*)              files+="%config(noreplace) \"${rel}\"
 " ;;
-      *)          files+="\"${rel}\"
+      /usr/share/man/*)    # rpm compresses man pages itself, so match any
+                           # suffix. Unquoted on purpose: quoting a path in
+                           # %files turns globbing off, and the glob is the
+                           # whole point here.
+                           files+="${rel}*
+" ;;
+      *)                   files+="\"${rel}\"
 " ;;
     esac
   done < <(find "$stage/src" \( -type f -o -type l \) | LC_ALL=C sort)
@@ -116,6 +128,8 @@ build_rpm() {
     echo "Source0:        ${tarname}.tar.gz"
     echo "BuildArch:      ${RPM_ARCH}"
     [ -n "${RPM_REQUIRES:-}" ] && for r in ${RPM_REQUIRES}; do echo "Requires:       $r"; done
+    [ -n "${RPM_RECOMMENDS:-}" ] && for r in ${RPM_RECOMMENDS}; do echo "Recommends:     $r"; done
+    [ -n "${RPM_SUGGESTS:-}" ] && for r in ${RPM_SUGGESTS}; do echo "Suggests:       $r"; done
     [ -n "${RPM_PROVIDES:-}" ] && for r in ${RPM_PROVIDES}; do echo "Provides:       $r"; done
     [ -n "${RPM_OBSOLETES:-}" ] && for r in ${RPM_OBSOLETES}; do echo "Obsoletes:      $r"; done
     echo
@@ -168,6 +182,12 @@ build_deb() {
   cp -a "$stage/src/." "$work/"
 
   # Documentation goes where Debian policy expects it.
+  # gzip -9n: no timestamp and no stored filename, so the result is identical
+  # on every machine and the package stays reproducible.
+  while IFS= read -r -d '' man; do
+    gzip -9n "$man"
+  done < <(find "$work/usr/share/man" -type f -name '*.[1-9]' -print0 2>/dev/null)
+
   local docdir="$work/usr/share/doc/${PKG_NAME}"
   mkdir -p "$docdir"
   [ -f "$stage/README.md" ] && cp "$stage/README.md" "$docdir/"
@@ -193,6 +213,8 @@ build_deb() {
     echo "Maintainer: ${MAINTAINER_NAME} <${MAINTAINER_EMAIL}>"
     echo "Installed-Size: ${size}"
     [ -n "${DEB_DEPENDS:-}" ] && echo "Depends: ${DEB_DEPENDS}"
+    [ -n "${DEB_RECOMMENDS:-}" ] && echo "Recommends: ${DEB_RECOMMENDS}"
+    [ -n "${DEB_SUGGESTS:-}" ] && echo "Suggests: ${DEB_SUGGESTS}"
     [ -n "${DEB_PROVIDES:-}" ] && echo "Provides: ${DEB_PROVIDES}"
     [ -n "${DEB_REPLACES:-}" ] && echo "Replaces: ${DEB_REPLACES}"
     echo "Section: ${PKG_SECTION}"

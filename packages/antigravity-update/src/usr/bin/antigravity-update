@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+# antigravity-update - update a local Antigravity IDE installation.
+#
+# Steps, all in one run:
+#   1. Read the installed version out of product.json.
+#   2. Find the newest version and its real download URL on the site.
+#   3. If the site is ahead: download (resumable), verify, extract, install.
+set -euo pipefail
+
+VERSION="@VERSION@"
+PROGRAM="${0##*/}"
+
+INSTALL_DIR="${ANTIGRAVITY_INSTALL_DIR:-/usr/share/antigravity-ide}"
+DEST_DIR="${TMPDIR:-$HOME}"
+DOWNLOAD_URL="https://antigravity.google/download"
+
+check_only=false
+dry_run=false
+keep_archive=false
+force=false
+
+usage() {
+  cat <<USAGE
+${PROGRAM} - update a local Antigravity IDE installation
+
+USAGE:
+    ${PROGRAM} [OPTIONS]
+
+DESCRIPTION:
+    Compares the version installed under the install directory with the newest
+    one published on antigravity.google. If the site is ahead, the new build is
+    downloaded, verified, and rsynced into place. Installing needs root, so
+    sudo may prompt.
+
+OPTIONS:
+    -c, --check          Report the installed and available versions, then exit
+                         without changing anything
+    -n, --dry-run        Do everything except install
+    -f, --force          Reinstall even when the installed version is current
+    -k, --keep           Keep the downloaded archive instead of deleting it
+    -d, --dir PATH       Install directory (default: ${INSTALL_DIR})
+    -V, --version        Print version and exit
+    -h, --help           Show this help and exit
+
+EXIT STATUS:
+    0   up to date, or updated successfully
+    1   something went wrong
+    2   bad usage or a missing dependency
+    3   with --check: an update is available
+
+ENVIRONMENT:
+    ANTIGRAVITY_INSTALL_DIR   Same as --dir.
+USAGE
+}
+
+die() { printf '%s: %s\n' "$PROGRAM" "$1" >&2; exit "${2:-1}"; }
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -c|--check)   check_only=true; shift ;;
+    -n|--dry-run) dry_run=true; shift ;;
+    -f|--force)   force=true; shift ;;
+    -k|--keep)    keep_archive=true; shift ;;
+    -d|--dir)     [ -n "${2:-}" ] || die "--dir needs a path" 2; INSTALL_DIR="$2"; shift 2 ;;
+    -V|--version) echo "${PROGRAM} ${VERSION}"; exit 0 ;;
+    -h|--help)    usage; exit 0 ;;
+    *)            usage >&2; die "unknown option: $1" 2 ;;
+  esac
+done
+
+for dep in curl jq tar rsync; do
+  command -v "$dep" >/dev/null 2>&1 || die "$dep is not installed" 2
+done
+
+PRODUCT_JSON="$INSTALL_DIR/resources/app/product.json"
+
+case "$(uname -m)" in
+  x86_64)        ARCH="linux-x64" ;;
+  aarch64|arm64) ARCH="linux-arm" ;;
+  *)             die "unsupported architecture: $(uname -m)" 2 ;;
+esac
+
+LOCAL="$(jq -r '.ideVersion // empty' "$PRODUCT_JSON" 2>/dev/null || true)"
+
+URL="$(curl -sL --compressed "$DOWNLOAD_URL" \
+  | grep -oiP "href=\"\Khttps://edgedl[^\"]*${ARCH}/Antigravity[^\"]*\.tar\.gz" \
+  | head -n1)" || true
+[ -n "$URL" ] || die "could not find a ${ARCH} download link on ${DOWNLOAD_URL}"
+REMOTE="$(grep -oP 'stable/\K[0-9]+\.[0-9]+\.[0-9]+' <<<"$URL" | head -n1)"
+
+printf 'installed : %s\n' "${LOCAL:-none}"
+printf 'available : %s\n' "${REMOTE}"
+
+up_to_date=false
+if [ -n "$LOCAL" ] && \
+   [ "$(printf '%s\n%s\n' "$LOCAL" "$REMOTE" | sort -V | tail -n1)" = "$LOCAL" ]; then
+  up_to_date=true
+fi
+
+if [ "$check_only" = true ]; then
+  if [ "$up_to_date" = true ]; then
+    echo "up to date"
+    exit 0
+  fi
+  echo "an update is available"
+  exit 3
+fi
+
+if [ "$up_to_date" = true ] && [ "$force" = false ]; then
+  echo "already up to date, nothing to do"
+  exit 0
+fi
+
+TARBALL="${DEST_DIR}/Antigravity-IDE-${REMOTE}.tar.gz"
+printf 'downloading to %s\n' "$TARBALL"
+curl -L --fail --retry 5 --retry-delay 2 -C - -o "$TARBALL" "$URL"
+
+# The download is resumable, so a truncated file looks like a success. Compare
+# against the size the server reports before trusting it.
+REMOTE_SIZE="$(curl -sIL "$URL" | awk 'tolower($1) == "content-length:" { v = $2 } END { gsub(/\r/, "", v); print v }')"
+LOCAL_SIZE="$(stat -c%s "$TARBALL")"
+if [ -n "$REMOTE_SIZE" ] && [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
+  die "incomplete download (${LOCAL_SIZE}/${REMOTE_SIZE} bytes) - re-run to resume"
+fi
+tar -tzf "$TARBALL" >/dev/null 2>&1 || die "corrupt archive - delete $TARBALL and re-run"
+
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+echo "extracting"
+tar -xzf "$TARBALL" -C "$TMP"
+SRC="$TMP/Antigravity IDE"
+[ -d "$SRC" ] || die "unexpected archive layout"
+
+if [ "$dry_run" = true ]; then
+  printf 'would install %s into %s\n' "$REMOTE" "$INSTALL_DIR"
+  [ "$keep_archive" = true ] || rm -f "$TARBALL"
+  exit 0
+fi
+
+printf 'installing into %s (sudo may ask for your password)\n' "$INSTALL_DIR"
+# Replace files and drop stale ones, but keep local extras the IDE writes.
+sudo rsync -a --delete --chown=root:root \
+  --exclude '.claude' --exclude 'antigravity' \
+  "$SRC"/ "$INSTALL_DIR"/
+sudo ln -sfn antigravity-ide "$INSTALL_DIR/antigravity"
+# The Chromium sandbox has to be setuid root or the IDE refuses to start.
+sudo chown root:root "$INSTALL_DIR/chrome-sandbox"
+sudo chmod 4755 "$INSTALL_DIR/chrome-sandbox"
+
+NEW="$(jq -r '.ideVersion // empty' "$PRODUCT_JSON" 2>/dev/null || true)"
+printf 'done, Antigravity IDE is now %s\n' "${NEW:-unknown}"
+
+if [ "$keep_archive" = true ]; then
+  printf 'archive kept at %s\n' "$TARBALL"
+else
+  rm -f "$TARBALL"
+  echo "cleaned up the downloaded archive"
+fi

@@ -1,0 +1,108 @@
+.TH PADNUM 1 "2026" "padnum @VERSION@" "User Commands"
+.SH NAME
+padnum \- zero\-pad the numeric prefix of filenames, with undo
+.SH SYNOPSIS
+.B padnum
+[\fB\-p\fR \fIN\fR] [\fB\-\-sep\fR \fISTRING\fR] [\fB\-\-ext\fR \fIEXT\fR] [\fB\-n\fR]
+.br
+.B padnum
+\fB\-\-undo\fR [\fIN\fR]
+.br
+.B padnum
+\fB\-\-history\fR
+.SH DESCRIPTION
+.B padnum
+works on the files in the current directory. For every filename that starts
+with digits it zero\-pads that number to a common width and leaves the rest of
+the name exactly as it was \(em Arabic text, spaces, underscores and dots all
+survive untouched.
+.PP
+So \fB1 intro.mp4\fR, \fB2 setup.mp4\fR ... \fB10 wrap.mp4\fR become
+\fB01 intro.mp4\fR, \fB02 setup.mp4\fR ... \fB10 wrap.mp4\fR, which is what any
+sane sort order needs.
+.PP
+Files that do not start with a digit are left alone, and so are directories.
+Leading separators between the number and the rest of the name
+(space, underscore, dot, hyphen) are normalised to the separator you choose.
+.SS Padding width
+Without
+.BR \-p ,
+the width is detected from the largest number present: 9 files gives width 1,
+10 files gives width 2, 100 gives 3.
+.SS Undo
+Every run records what it renamed in
+.B .padnum.undo
+in the working directory, keeping up to 10 generations. A dry run records
+nothing.
+.SH OPTIONS
+.TP
+.BR \-p ", " \-\-padding " " \fIN\fR
+Pad to a fixed width of \fIN\fR digits instead of detecting it.
+.TP
+.B \-\-sep " " \fISTRING\fR
+Separator between the number and the rest of the name. Default is a single
+space.
+.TP
+.B \-\-ext " " \fIEXT\fR
+Only touch files with this extension, matched case\-insensitively.
+.TP
+.BR \-n ", " \-\-dry\-run
+Print what would be renamed and change nothing, including the undo history.
+.TP
+.B \-\-undo " " [\fIN\fR]
+Undo the last operation, or the last \fIN\fR operations. Combine with
+.B \-n
+to see what an undo would do.
+.TP
+.B \-\-history
+Show the undo history, oldest first, in a pager.
+.TP
+.B \-\-version
+Print the version and exit.
+.TP
+.BR \-h ", " \-\-help
+Show a usage summary and exit.
+.SH FILES
+.TP
+.B ./.padnum.undo
+Undo history for the directory it sits in. Delete it to forget the history.
+.SH EXAMPLES
+Pad using the detected width:
+.PP
+.RS
+.EX
+padnum
+.EE
+.RE
+.PP
+Force three digits, only for mp4 files, and look before you leap:
+.PP
+.RS
+.EX
+padnum \-n \-p 3 \-\-ext mp4
+.EE
+.RE
+.PP
+Use a hyphen instead of a space, then change your mind:
+.PP
+.RS
+.EX
+padnum \-\-sep "\-"
+padnum \-\-undo
+.EE
+.RE
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 1
+No undo history, or no more undo steps available.
+.TP
+.B 2
+Bad usage.
+.SH SEE ALSO
+.BR mv (1),
+.BR rename (1)
+.SH AUTHOR
+Written by @MAINTAINER@.

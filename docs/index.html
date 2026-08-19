@@ -46,27 +46,26 @@
 
   <h2>1 &middot; Add the repository</h2>
   <div class="tabs" role="tablist">
-    <button class="tab" role="tab" aria-selected="true"  data-panel="p-dnf">Fedora / RHEL</button>
+    <button class="tab" role="tab" aria-selected="true"  data-panel="p-sh">Any distro</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="p-dnf">Fedora / RHEL</button>
     <button class="tab" role="tab" aria-selected="false" data-panel="p-apt">Debian / Ubuntu</button>
-    <button class="tab" role="tab" aria-selected="false" data-panel="p-sh">One-liner</button>
   </div>
 
-  <div class="card" id="p-dnf">
-<pre><code>sudo rpm --import https://abdallah-shehawey.github.io/shinux/RPM-GPG-KEY-shinux
-sudo dnf install -y https://abdallah-shehawey.github.io/shinux/rpm/shinux-release-1.0-1.noarch.rpm</code></pre>
-    <p class="lead">Drops <code>/etc/yum.repos.d/shinux.repo</code> and the signing key.</p>
+  <div class="card" id="p-sh">
+<pre><code>curl -fsSL https://abdallah-shehawey.github.io/shinux/install.sh | sudo sh</code></pre>
+    <p class="lead">Detects dnf or apt, imports the key and adds the repository.
+       <a href="install.sh">Read it first</a> if you would rather not pipe into a shell.</p>
+  </div>
+
+  <div class="card" id="p-dnf" hidden>
+<pre><code>sudo dnf install -y https://abdallah-shehawey.github.io/shinux/rpm/shinux-release-1.0-1.noarch.rpm</code></pre>
+    <p class="lead">Installs <code>/etc/yum.repos.d/shinux.repo</code> and the signing key.
+       dnf asks once to trust the key on the next command.</p>
   </div>
 
   <div class="card" id="p-apt" hidden>
-<pre><code>sudo install -d -m 0755 /etc/apt/keyrings
-sudo curl -fsSL https://abdallah-shehawey.github.io/shinux/shinux.gpg -o /etc/apt/keyrings/shinux.gpg
-sudo curl -fsSL https://abdallah-shehawey.github.io/shinux/shinux.sources -o /etc/apt/sources.list.d/shinux.sources
-sudo apt update</code></pre>
-  </div>
-
-  <div class="card" id="p-sh" hidden>
-<pre><code>curl -fsSL https://abdallah-shehawey.github.io/shinux/install.sh | sudo sh</code></pre>
-    <p class="lead">Detects dnf or apt and does the right thing. Read it first if you would rather not pipe to a shell.</p>
+<pre><code>curl -fsSL https://abdallah-shehawey.github.io/shinux/shinux-keyring.deb -o /tmp/shinux-keyring.deb &amp;&amp; sudo apt install -y /tmp/shinux-keyring.deb</code></pre>
+    <p class="lead">Installs the sources entry and the signing key, then run <code>sudo apt update</code>.</p>
   </div>
 
   <h2>2 &middot; Install a package</h2>
@@ -75,11 +74,38 @@ sudo apt update</code></pre>
 sudo apt install hello-shinux     <span style="color:#5d7186"># Debian / Ubuntu</span></code></pre>
   </div>
 
+  <h2>3 &middot; Remove the repository</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true"  data-panel="r-sh">One-liner</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="r-dnf">Fedora / RHEL</button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="r-apt">Debian / Ubuntu</button>
+  </div>
+
+  <div class="card" id="r-sh">
+<pre><code>curl -fsSL https://abdallah-shehawey.github.io/shinux/uninstall.sh | sudo sh
+curl -fsSL https://abdallah-shehawey.github.io/shinux/uninstall.sh | sudo sh -s -- --purge   <span style="color:#5d7186"># also remove installed packages</span></code></pre>
+    <p class="lead">Without <code>--purge</code>, packages you already installed stay on the system;
+       only the repository and its key are removed.</p>
+  </div>
+
+  <div class="card" id="r-dnf" hidden>
+<pre><code>sudo dnf remove shinux-release
+sudo rpm -e $(rpm -qa 'gpg-pubkey*' --qf '%{NAME}-%{VERSION}-%{RELEASE} %{SUMMARY}\n' | grep -i shinux | cut -d' ' -f1)
+sudo dnf clean all</code></pre>
+    <p class="lead">The first line drops <code>/etc/yum.repos.d/shinux.repo</code>; the second stops trusting the signing key.</p>
+  </div>
+
+  <div class="card" id="r-apt" hidden>
+<pre><code>sudo apt purge shinux-archive-keyring
+sudo rm -f /etc/apt/sources.list.d/shinux.sources /etc/apt/keyrings/shinux.gpg
+sudo apt update</code></pre>
+  </div>
+
   <h2>Available packages</h2>
   <div class="card">
     <table>
       <thead><tr><th>Package</th><th>Version</th><th>Format</th><th>Summary</th></tr></thead>
-      <tbody><tr><td><code>hello-shinux</code></td><td>1.0.0-1</td><td><span class="badge rpm">rpm</span> noarch</td><td>Demo package shipped from the Shinux repository</td></tr><tr><td><code>shinux-release</code></td><td>1.0-1</td><td><span class="badge rpm">rpm</span> noarch</td><td>Shinux Repository configuration and GPG key</td></tr><tr><td><code>hello-shinux</code></td><td>1.0.0-1</td><td><span class="badge deb">deb</span> all</td><td>Demo package shipped from the Shinux repository</td></tr><tr><td><code>shinux-archive-keyring</code></td><td>1.0-1</td><td><span class="badge deb">deb</span> all</td><td>Shinux Repository apt sources and signing key</td></tr></tbody>
+      <tbody><tr><td><code>antigravity-update</code></td><td>1.1.0-1</td><td><span class="badge rpm">rpm</span> noarch</td><td>Update a local Antigravity IDE installation</td></tr><tr><td><code>dlup</code></td><td>1.0.0-1</td><td><span class="badge rpm">rpm</span> noarch</td><td>Download media with yt-dlp and push it straight to an rclone remote</td></tr><tr><td><code>hashnum</code></td><td>1.0.0-1</td><td><span class="badge rpm">rpm</span> noarch</td><td>Move a #N tag to the front of a filename</td></tr><tr><td><code>hello-shinux</code></td><td>1.0.0-1</td><td><span class="badge rpm">rpm</span> noarch</td><td>Demo package shipped from the Shinux repository</td></tr><tr><td><code>meet</code></td><td>1.1.0-1</td><td><span class="badge rpm">rpm</span> noarch</td><td>Open a saved meeting link by name</td></tr><tr><td><code>padnum</code></td><td>1.1.0-1</td><td><span class="badge rpm">rpm</span> noarch</td><td>Zero-pad the numeric prefix of filenames, with undo</td></tr><tr><td><code>shinux-release</code></td><td>1.0-1</td><td><span class="badge rpm">rpm</span> noarch</td><td>Shinux Repository configuration and GPG key</td></tr><tr><td><code>shinux-scripts</code></td><td>1.0.0-1</td><td><span class="badge rpm">rpm</span> noarch</td><td>Every command from the Shinux repository, in one install</td></tr><tr><td><code>update-every-thing</code></td><td>1.1.0-1</td><td><span class="badge rpm">rpm</span> noarch</td><td>Run every Fedora update in one pass, with a summary</td></tr><tr><td><code>vidtime</code></td><td>1.1.0-1</td><td><span class="badge rpm">rpm</span> noarch</td><td>Print how long media files run, and their total</td></tr><tr><td><code>antigravity-update</code></td><td>1.1.0-1</td><td><span class="badge deb">deb</span> all</td><td>Update a local Antigravity IDE installation</td></tr><tr><td><code>dlup</code></td><td>1.0.0-1</td><td><span class="badge deb">deb</span> all</td><td>Download media with yt-dlp and push it straight to an rclone remote</td></tr><tr><td><code>hashnum</code></td><td>1.0.0-1</td><td><span class="badge deb">deb</span> all</td><td>Move a #N tag to the front of a filename</td></tr><tr><td><code>hello-shinux</code></td><td>1.0.0-1</td><td><span class="badge deb">deb</span> all</td><td>Demo package shipped from the Shinux repository</td></tr><tr><td><code>meet</code></td><td>1.1.0-1</td><td><span class="badge deb">deb</span> all</td><td>Open a saved meeting link by name</td></tr><tr><td><code>padnum</code></td><td>1.1.0-1</td><td><span class="badge deb">deb</span> all</td><td>Zero-pad the numeric prefix of filenames, with undo</td></tr><tr><td><code>shinux-archive-keyring</code></td><td>1.0-1</td><td><span class="badge deb">deb</span> all</td><td>Shinux Repository apt sources and signing key</td></tr><tr><td><code>shinux-scripts</code></td><td>1.0.0-1</td><td><span class="badge deb">deb</span> all</td><td>Every command from the Shinux repository, in one install</td></tr><tr><td><code>vidtime</code></td><td>1.1.0-1</td><td><span class="badge deb">deb</span> all</td><td>Print how long media files run, and their total</td></tr></tbody>
     </table>
   </div>
 
@@ -97,14 +123,16 @@ sudo apt install hello-shinux     <span style="color:#5d7186"># Debian / Ubuntu<
   </footer>
 </div>
 <script>
-  const tabs = document.querySelectorAll('.tab');
-  tabs.forEach(t => t.addEventListener('click', () => {
-    tabs.forEach(o => {
-      const on = o === t;
-      o.setAttribute('aria-selected', on);
-      document.getElementById(o.dataset.panel).hidden = !on;
-    });
-  }));
+  document.querySelectorAll('.tabs').forEach(group => {
+    const tabs = group.querySelectorAll('.tab');
+    tabs.forEach(t => t.addEventListener('click', () => {
+      tabs.forEach(o => {
+        const on = o === t;
+        o.setAttribute('aria-selected', on);
+        document.getElementById(o.dataset.panel).hidden = !on;
+      });
+    }));
+  });
 </script>
 </body>
 </html>
