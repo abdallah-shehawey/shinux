@@ -3,6 +3,8 @@
 #   podman build -t localhost/shinux-test-debian -f scripts/Containerfile.test-debian .
 FROM docker.io/library/ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
+# The lists are deliberately kept: deleting them is the usual way to shrink an
+# image, but here they are the whole point -- without them the test spends the
+# best part of an hour re-fetching the Ubuntu archive index.
 RUN apt-get update -qq \
- && apt-get install -y -qq curl ca-certificates gnupg man-db bash-completion \
- && rm -rf /var/lib/apt/lists/*
+ && apt-get install -y -qq curl ca-certificates gnupg man-db bash-completion
