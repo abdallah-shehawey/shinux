@@ -45,7 +45,8 @@ if command -v dnf >/dev/null 2>&1 || command -v yum >/dev/null 2>&1; then
     echo "==> removing ${REPO_ID}-release"
     "$pm" remove -y "${REPO_ID}-release"
   fi
-  rm -f "/etc/yum.repos.d/${REPO_ID}.repo" "/etc/pki/rpm-gpg/RPM-GPG-KEY-${REPO_ID}"
+  rm -f "/etc/yum.repos.d/${REPO_ID}.repo" "/etc/yum.repos.d/${REPO_ID}.repo.rpmnew" \
+        "/etc/pki/rpm-gpg/RPM-GPG-KEY-${REPO_ID}"
 
   # Drop the trusted key from the rpm database.
   for k in $(rpm -qa 'gpg-pubkey*' --qf '%{NAME}-%{VERSION}-%{RELEASE} %{SUMMARY}\n' 2>/dev/null \

@@ -41,16 +41,58 @@ trap 'kill "${server}" 2>/dev/null || true' EXIT
 sleep 1
 curl -fsS "${BASE_URL}/index.html" >/dev/null || die "local http server did not come up"
 
+# A warm image with the test's own prerequisites already installed, if one has
+# been built. The plain base image works exactly the same, it just spends
+# several minutes re-downloading distribution metadata on every run:
+#   podman build -t localhost/shinux-test-fedora -f scripts/Containerfile.test-fedora .
+warm="localhost/${REPO_ID}-test-${family}"
+if "$eng" image exists "$warm" 2>/dev/null; then
+  info "using the warm test image ${warm}"
+else
+  warm=""
+fi
+
 case "$family" in
   fedora)
-    image="registry.fedoraproject.org/fedora:44"
+    image="${warm:-registry.fedoraproject.org/fedora:44}"
     script='set -eu
+      # The documented by-hand order: trust the key, then add the repository.
+      # A scriptlet cannot do the first step -- rpm holds its database open for
+      # the whole transaction -- so whatever adds the repository has to.
       rpm --import '"${BASE_URL}"'/RPM-GPG-KEY-'"${REPO_ID}"'
       dnf install -y '"${BASE_URL}"'/rpm/'"$(cd "${RPM_DIR}" && ls -1 ${REPO_ID}-release-*.rpm | sort -V | tail -1)"'
       dnf -q repolist '"${REPO_ID}"'
+
+      echo "### the key is trusted, so no install will stop to ask about it"
+      rpm -qa gpg-pubkey --qf "%{SUMMARY}\n" | grep -i '"${REPO_ID}"'
+
       # The Fedora container image sets tsflags=nodocs, which strips man pages
       # on install. Turn that off so the test actually checks them.
-      dnf install -y -q --setopt=tsflags= man-db bash-completion >/dev/null
+      # shadow-utils for useradd, util-linux for runuser: the completion checks
+      # below have to run as an unprivileged user to mean anything.
+      dnf install -y -q --setopt=tsflags= man-db bash-completion shadow-utils util-linux >/dev/null
+
+      echo "### antigravity-update is only suggested, never pulled in"
+      if dnf install --assumeno update-every-thing 2>&1 | grep -q antigravity; then
+        echo "FAIL: antigravity-update was pulled in as a dependency"; exit 1
+      fi
+
+      # Before the install, on purpose: completing a package you already have is
+      # the easy half. The point of a repository is that `sudo dnf install
+      # vid<TAB>` finds vidtime while it is still only available.
+      #
+      # Unprivileged on purpose too: completion runs dnf as your own user
+      # against ~/.cache/libdnf5, which has no signing key in it. With
+      # repo_gpgcheck=1 the repository is silently dropped right here and our
+      # packages never appear.
+      echo "### tab completion finds a package that is NOT installed yet"
+      useradd -m tester
+      if rpm -q vidtime >/dev/null 2>&1; then
+        echo "FAIL: vidtime is already installed, this proves nothing"; exit 1
+      fi
+      runuser -u tester -- dnf5 --complete=2 dnf install vid | tee /tmp/comp
+      grep -qx vidtime /tmp/comp
+      runuser -u tester -- dnf5 --complete=2 dnf install hello- | grep -qx hello-'"${REPO_ID}"'
 
       echo "### installing every package from the repository"
       dnf install -y --setopt=tsflags= '"${REPO_ID}"'-scripts hello-'"${REPO_ID}"'
@@ -75,6 +117,9 @@ case "$family" in
       echo "### bash completions are installed"
       ls /usr/share/bash-completion/completions/ | sort
 
+      echo "### and completion still works now that the package is installed"
+      runuser -u tester -- dnf5 --complete=2 dnf remove vid | grep -qx vidtime
+
       echo "### update-every-thing detects the right package manager"
       update-every-thing --help | grep -i "dnf/yum or apt"
 
@@ -84,7 +129,7 @@ case "$family" in
       padnum && ls -1'
     ;;
   debian)
-    image="docker.io/library/ubuntu:24.04"
+    image="${warm:-docker.io/library/ubuntu:24.04}"
     script='set -eu
       export DEBIAN_FRONTEND=noninteractive
       apt-get update -qq
@@ -97,6 +142,23 @@ case "$family" in
 
       echo "### the Release file verified against the pinned key"
       apt-cache policy | grep -A1 '"${REPO_ID}"' | head -4
+
+      echo "### antigravity-update is only suggested, never pulled in"
+      if apt-get install -s update-every-thing | grep -q "^Inst antigravity"; then
+        echo "FAIL: antigravity-update was pulled in as a dependency"; exit 1
+      fi
+
+      # Before the install, on purpose: completing a package you already have is
+      # the easy half. apt completion shells out to exactly this, as the
+      # invoking user, so run it the same way.
+      echo "### tab completion finds a package that is NOT installed yet"
+      useradd -m tester
+      if dpkg-query -W -f="\${Status}" vidtime 2>/dev/null | grep -q "^install ok installed$"; then
+        echo "FAIL: vidtime is already installed, this proves nothing"; exit 1
+      fi
+      runuser -u tester -- apt-cache --no-generate pkgnames vid | tee /tmp/comp
+      grep -qx vidtime /tmp/comp
+      runuser -u tester -- apt-cache --no-generate pkgnames hello- | grep -qx hello-'"${REPO_ID}"'
 
       echo "### installing every package from the repository"
       apt-get install -y '"${REPO_ID}"'-scripts hello-'"${REPO_ID}"'
@@ -118,6 +180,9 @@ case "$family" in
 
       echo "### bash completions are installed"
       ls /usr/share/bash-completion/completions/ | sort
+
+      echo "### and completion still works now that the package is installed"
+      runuser -u tester -- apt-cache --no-generate pkgnames vidtime | grep -qx vidtime
 
       echo "### update-every-thing picked apt, not dnf"
       update-every-thing --help | grep -i "dnf/yum or apt"

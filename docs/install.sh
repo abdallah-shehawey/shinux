@@ -5,7 +5,7 @@ set -eu
 
 BASE_URL="https://abdallah-shehawey.github.io/shinux"
 REPO_ID="shinux"
-RELEASE_RPM="shinux-release-1.0-1.noarch.rpm"
+RELEASE_RPM="shinux-release-1.1-1.noarch.rpm"
 
 if [ "$(id -u)" -ne 0 ]; then
   echo "This installer writes to /etc, run it with sudo." >&2

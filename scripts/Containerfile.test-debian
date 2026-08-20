@@ -1,0 +1,8 @@
+# Warm image for scripts/test-install.sh debian. See Containerfile.test-fedora.
+#
+#   podman build -t localhost/shinux-test-debian -f scripts/Containerfile.test-debian .
+FROM docker.io/library/ubuntu:24.04
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update -qq \
+ && apt-get install -y -qq curl ca-certificates gnupg man-db bash-completion \
+ && rm -rf /var/lib/apt/lists/*

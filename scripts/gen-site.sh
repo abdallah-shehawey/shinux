@@ -9,14 +9,30 @@ RELEASE_RPM="$(cd "${RPM_DIR}" 2>/dev/null && ls -1 ${REPO_ID}-release-*.rpm 2>/
 RELEASE_RPM="${RELEASE_RPM:-${REPO_ID}-release-1.0-1.noarch.rpm}"
 FPR_PRETTY="$(echo "${FPR}" | sed 's/.\{4\}/& /g; s/ $//')"
 
+# Icons are generated once by scripts/make-icons.py and committed under docs/.
+# When OUT_DIR is a throwaway tree (the install test), carry them across so the
+# page it serves is the same page.
+if [ "${OUT_DIR}" != "${ROOT_DIR}/docs" ]; then
+  for icon in favicon.svg favicon.ico favicon-16.png favicon-32.png \
+              apple-touch-icon.png logo.svg; do
+    if [ -f "${ROOT_DIR}/docs/${icon}" ]; then
+      cp "${ROOT_DIR}/docs/${icon}" "${OUT_DIR}/"
+    fi
+  done
+fi
+
 # Standalone copies, for people who prefer adding the repo by hand.
+# repo_gpgcheck stays off here for the same reason as in the release package:
+# packages are still verified by gpgcheck=1, while metadata verification would
+# break `dnf install <TAB>`, which runs dnf as an unprivileged user with its own
+# empty keyring. See scripts/gen-release-packages.sh for the full note.
 cat > "${OUT_DIR}/${REPO_ID}.repo" <<EOF
 [${REPO_ID}]
 name=${REPO_NAME}
 baseurl=${BASE_URL}/rpm/
 enabled=1
 gpgcheck=1
-repo_gpgcheck=1
+repo_gpgcheck=0
 gpgkey=${BASE_URL}/RPM-GPG-KEY-${REPO_ID}
 metadata_expire=6h
 EOF
@@ -134,7 +150,8 @@ if command -v dnf >/dev/null 2>&1 || command -v yum >/dev/null 2>&1; then
     echo "==> removing ${REPO_ID}-release"
     "$pm" remove -y "${REPO_ID}-release"
   fi
-  rm -f "/etc/yum.repos.d/${REPO_ID}.repo" "/etc/pki/rpm-gpg/RPM-GPG-KEY-${REPO_ID}"
+  rm -f "/etc/yum.repos.d/${REPO_ID}.repo" "/etc/yum.repos.d/${REPO_ID}.repo.rpmnew" \
+        "/etc/pki/rpm-gpg/RPM-GPG-KEY-${REPO_ID}"
 
   # Drop the trusted key from the rpm database.
   for k in $(rpm -qa 'gpg-pubkey*' --qf '%{NAME}-%{VERSION}-%{RELEASE} %{SUMMARY}\n' 2>/dev/null \
@@ -237,16 +254,24 @@ cat > "${OUT_DIR}/index.html" <<HTMLEOF
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${REPO_NAME}</title>
 <meta name="description" content="Third-party dnf and apt repository maintained by ${MAINTAINER_NAME}.">
+<meta name="theme-color" content="#0b0f14">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
   :root{--bg:#0b0f14;--panel:#111823;--line:#1e2a3a;--fg:#e6edf5;--dim:#8ea0b5;
         --accent:#38bdf8;--accent2:#f59e0b;--code:#0a0e13}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);
        font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-  .wrap{max-width:880px;margin:0 auto;padding:48px 20px 80px}
-  h1{font-size:2rem;margin:0 0 6px;letter-spacing:-.02em}
+  /* Full-bleed: the page uses the whole window, with the side gutter growing
+     on wide screens instead of a centred column. Only running prose keeps a
+     measure, so cards, tables and code blocks span the full width. */
+  .wrap{margin:0;padding:48px clamp(20px,4vw,72px) 80px}
+  h1{font-size:2rem;margin:0 0 6px;letter-spacing:-.02em;
+     display:flex;align-items:center;gap:12px}
   h2{font-size:1.15rem;margin:44px 0 12px;color:var(--accent)}
-  p.lead{color:var(--dim);margin:0 0 8px}
+  p.lead{color:var(--dim);margin:0 0 8px;max-width:90ch}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
         padding:18px 20px;margin:14px 0}
   .tabs{display:flex;gap:8px;margin:18px 0 0;flex-wrap:wrap}
@@ -272,7 +297,7 @@ cat > "${OUT_DIR}/index.html" <<HTMLEOF
 </head>
 <body>
 <div class="wrap">
-  <h1>${REPO_NAME}</h1>
+  <h1><img src="logo.svg" alt="" width="40" height="40">${REPO_NAME}</h1>
   <p class="lead">A signed package repository for <strong>dnf</strong> (Fedora, RHEL, CentOS, Rocky, Alma)
      and <strong>apt</strong> (Debian, Ubuntu, Mint).</p>
 
@@ -290,9 +315,11 @@ cat > "${OUT_DIR}/index.html" <<HTMLEOF
   </div>
 
   <div class="card" id="p-dnf" hidden>
-<pre><code>sudo dnf install -y ${BASE_URL}/rpm/${RELEASE_RPM}</code></pre>
-    <p class="lead">Installs <code>/etc/yum.repos.d/${REPO_ID}.repo</code> and the signing key.
-       dnf asks once to trust the key on the next command.</p>
+<pre><code>sudo rpm --import ${BASE_URL}/RPM-GPG-KEY-${REPO_ID}
+sudo dnf install -y ${BASE_URL}/rpm/${RELEASE_RPM}</code></pre>
+    <p class="lead">The first line trusts the signing key, the second installs
+       <code>/etc/yum.repos.d/${REPO_ID}.repo</code>. Skip the first and dnf asks you to
+       confirm the key on your next install instead — same result, one prompt.</p>
   </div>
 
   <div class="card" id="p-apt" hidden>

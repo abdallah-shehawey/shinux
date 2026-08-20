@@ -4,6 +4,8 @@
 # A package is a directory containing:
 #   metadata.env   - name/version/summary/deps, see packages/hello-shinux
 #   src/           - a filesystem tree rooted at / (src/usr/bin/foo -> /usr/bin/foo)
+#   rpm/           - optional scriptlet bodies: pre post preun postun posttrans
+#   debian/        - optional maintainer scripts: preinst postinst prerm postrm
 #   LICENSE        - optional
 #   README.md      - optional
 #
@@ -144,6 +146,18 @@ build_rpm() {
     echo "%install"
     echo 'cp -a src/. %{buildroot}/'
     echo
+
+    # Optional scriptlets, copied straight from the package directory — the rpm
+    # counterpart of debian/{preinst,postinst,...}. rpm runs the body with
+    # /bin/sh and passes the install count as $1, so the files are written that
+    # way rather than as standalone executables.
+    for sl in pre post preun postun posttrans; do
+      [ -f "${pkgdir}/rpm/${sl}" ] || continue
+      echo "%${sl}"
+      cat "${pkgdir}/rpm/${sl}"
+      echo
+    done
+
     echo "%files"
     [ -n "$lic_line" ] && echo "$lic_line"
     [ -n "$doc_line" ] && echo "$doc_line"

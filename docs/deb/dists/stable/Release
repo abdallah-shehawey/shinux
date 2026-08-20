@@ -6,26 +6,26 @@ Version: 1.0
 Architectures: amd64 arm64
 Components: main
 Description: Shinux Repository for Debian and Ubuntu
-Date: Wed, 19 Aug 2026 22:03:33 GMT
+Date: Thu, 20 Aug 2026 01:42:48 GMT
 Acquire-By-Hash: no
 MD5Sum:
- bee1b4f7b313e0244420d5fc1ce808a1            17681 main/binary-amd64/Packages
- 6b4319330a7d8bfd33aebcb5063b4798             4732 main/binary-amd64/Packages.gz
+ 0a9e2e3514ca44b2e0942499d87317f1            18712 main/binary-amd64/Packages
+ e5f4fd969a15a6c4e1f88231a491e9f5             4859 main/binary-amd64/Packages.gz
  bdcb893411140d7398acd97d7ccb0698               92 main/binary-amd64/Release
- bee1b4f7b313e0244420d5fc1ce808a1            17681 main/binary-arm64/Packages
- 6b4319330a7d8bfd33aebcb5063b4798             4732 main/binary-arm64/Packages.gz
+ 0a9e2e3514ca44b2e0942499d87317f1            18712 main/binary-arm64/Packages
+ e5f4fd969a15a6c4e1f88231a491e9f5             4859 main/binary-arm64/Packages.gz
  cf63e6a0569722b3dc2ec789c7d6ae15               92 main/binary-arm64/Release
 SHA1:
- 06c2ddeb45d604f2a92f5114b42964b9287cdb6a            17681 main/binary-amd64/Packages
- a593296da7710d2c5b0117cc8c2a6d27023af9b0             4732 main/binary-amd64/Packages.gz
+ 7568b217f8eff0f1ac77ccd93992516eb4c82760            18712 main/binary-amd64/Packages
+ 63196c165f8fef5f17d1f8d50b8f6d3d53d1fc37             4859 main/binary-amd64/Packages.gz
  f022ecfc8842ddcf944b34cd3632ad8207d2e654               92 main/binary-amd64/Release
- 06c2ddeb45d604f2a92f5114b42964b9287cdb6a            17681 main/binary-arm64/Packages
- a593296da7710d2c5b0117cc8c2a6d27023af9b0             4732 main/binary-arm64/Packages.gz
+ 7568b217f8eff0f1ac77ccd93992516eb4c82760            18712 main/binary-arm64/Packages
+ 63196c165f8fef5f17d1f8d50b8f6d3d53d1fc37             4859 main/binary-arm64/Packages.gz
  677b4c33a1dd3c54ab2be2c45f18e0ae872931e1               92 main/binary-arm64/Release
 SHA256:
- 37d28ea6f57dffd617fb1b314a16c6cc12fd48f24eb0e3ca548abb6f7ccc9332            17681 main/binary-amd64/Packages
- 3b73e05236c87b0f2f06cbdc869242a3f2e853446531288dda568f1677df5712             4732 main/binary-amd64/Packages.gz
+ efda104cfd2dc7823b606ef021457d378b4b652669c3fe88066b6356596854e3            18712 main/binary-amd64/Packages
+ 9a6824056aebe5704ad2ff76a7d38da18efbaff0f0e4d822e969cc05e4384541             4859 main/binary-amd64/Packages.gz
  f57a70d4a8de8466bf7e7d774d37859c6e435835f874b18e41413576214db3f0               92 main/binary-amd64/Release
- 37d28ea6f57dffd617fb1b314a16c6cc12fd48f24eb0e3ca548abb6f7ccc9332            17681 main/binary-arm64/Packages
- 3b73e05236c87b0f2f06cbdc869242a3f2e853446531288dda568f1677df5712             4732 main/binary-arm64/Packages.gz
+ efda104cfd2dc7823b606ef021457d378b4b652669c3fe88066b6356596854e3            18712 main/binary-arm64/Packages
+ 9a6824056aebe5704ad2ff76a7d38da18efbaff0f0e4d822e969cc05e4384541             4859 main/binary-arm64/Packages.gz
  96d03ea79553536ca778ccf8533350a7e872f3e06eba3522a8e59245b8fca65a               92 main/binary-arm64/Release

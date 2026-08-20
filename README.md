@@ -234,8 +234,15 @@ places, all of which are already handled and worth not undoing:
 
 ### Security
 
-- Every `.rpm` is signed, and so is `repodata/repomd.xml` — the `.repo` file
-  sets both `gpgcheck=1` and `repo_gpgcheck=1`.
+- Every `.rpm` is signed and the `.repo` file sets `gpgcheck=1`, so nothing
+  installs without a matching signature. `shinux-release` imports the public
+  key from `%posttrans`, which is why the first install never stops to ask.
+- `repodata/repomd.xml` is signed too, but the shipped `.repo` sets
+  `repo_gpgcheck=0` — as Fedora, RPM Fusion, EPEL and every COPR do. dnf keeps
+  its metadata keyring per cache directory, and shell completion runs dnf as
+  your own user against `~/.cache/libdnf5`, where no key was ever imported;
+  with the check on, `dnf install <TAB>` quietly drops the repository. Set it
+  back to `1` if you would rather have the check than the completion.
 - The apt `Release` file is signed detached (`Release.gpg`) and inline
   (`InRelease`), and the sources entry pins the key with `Signed-By:`, so it can
   only ever vouch for this one repository.

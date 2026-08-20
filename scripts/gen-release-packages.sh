@@ -19,13 +19,25 @@ rm -rf "${GEN}"
 rel="${GEN}/${REPO_ID}-release"
 mkdir -p "${rel}/src/etc/yum.repos.d" "${rel}/src/etc/pki/rpm-gpg"
 
+# repo_gpgcheck=0 is deliberate, and it is what Fedora, RPM Fusion, EPEL and
+# every COPR ship. It does NOT mean packages go unverified: gpgcheck=1 still
+# checks the signature on every rpm, which is the part that carries code.
+# repo_gpgcheck only covers repomd.xml, and turning it on costs two things
+# that matter more here than the metadata signature does:
+#   * dnf keeps its repo keyring per cache directory, and an unprivileged dnf
+#     uses ~/.cache/libdnf5 — where the key has never been imported. Shell
+#     completion runs dnf as your own user, so `dnf install <TAB>` silently
+#     drops this repo and never offers its packages.
+#   * the first transaction stops on an interactive "Is this ok [y/N]" prompt.
+# The metadata is still signed and repomd.xml.asc is still published, so
+# anyone who wants the stricter check can set repo_gpgcheck=1 themselves.
 cat > "${rel}/src/etc/yum.repos.d/${REPO_ID}.repo" <<REPOEOF
 [${REPO_ID}]
 name=${REPO_NAME}
 baseurl=${BASE_URL}/rpm/
 enabled=1
 gpgcheck=1
-repo_gpgcheck=1
+repo_gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-${REPO_ID}
 metadata_expire=6h
 skip_if_unavailable=False
@@ -36,7 +48,7 @@ name=${REPO_NAME} - Source
 baseurl=${BASE_URL}/srpm/
 enabled=0
 gpgcheck=1
-repo_gpgcheck=1
+repo_gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-${REPO_ID}
 REPOEOF
 
@@ -44,9 +56,32 @@ cp "${KEY_ASC}" "${rel}/src/etc/pki/rpm-gpg/RPM-GPG-KEY-${REPO_ID}"
 chmod 0644 "${rel}/src/etc/pki/rpm-gpg/RPM-GPG-KEY-${REPO_ID}" \
            "${rel}/src/etc/yum.repos.d/${REPO_ID}.repo"
 
+# The package deliberately does NOT run `rpm --import` from a scriptlet. It was
+# tried: rpm holds its database open for the whole transaction, so a nested
+# `rpm --import` fails from %post and from %posttrans alike, and fails quietly.
+# Trusting the key is therefore something the *installer* does, before this
+# package is fetched -- which is what install.sh and the documented by-hand
+# commands do, and what every vendor repository does. dnf's own one-time
+# "Is this ok [y/N]" prompt stays as the fallback for anyone who skips it.
+#
+# The sed below is a one-off migration away from the old repo_gpgcheck=1
+# default, not configuration. %config(noreplace) already updates the file for
+# anyone who never edited it; this covers the rest, who would otherwise keep a
+# setting that breaks shell completion, and get a .rpmnew nobody reads.
+mkdir -p "${rel}/rpm"
+cat > "${rel}/rpm/posttrans" <<POSTEOF
+repo=/etc/yum.repos.d/${REPO_ID}.repo
+if [ -f "\$repo" ] && grep -q '^repo_gpgcheck=1' "\$repo"; then
+  sed -i 's/^repo_gpgcheck=1/repo_gpgcheck=0/' "\$repo" || :
+  rm -f "\$repo.rpmnew"
+  echo "${REPO_NAME}: repo_gpgcheck turned off, so shell completion can read the repository"
+fi
+exit 0
+POSTEOF
+
 cat > "${rel}/metadata.env" <<METAEOF
 PKG_NAME="${REPO_ID}-release"
-PKG_VERSION="1.0"
+PKG_VERSION="1.1"
 PKG_RELEASE="1"
 PKG_FORMATS="rpm"
 PKG_SUMMARY="${REPO_NAME} configuration and GPG key"

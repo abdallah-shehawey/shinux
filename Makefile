@@ -9,6 +9,9 @@ help:  ## show this help
 key:  ## create (or re-export) the repository signing key
 	@scripts/gpg-setup.sh
 
+icons:  ## regenerate the site icons in docs/ (never hand-edit the PNGs)
+	@scripts/make-icons.py
+
 build:  ## build every package into build/out
 	@scripts/build.sh
 
@@ -36,4 +39,4 @@ clean:  ## remove build artefacts (docs/ is left alone)
 	@rm -rf build
 	@echo "cleaned build/"
 
-.PHONY: help key build publish bump prune serve test test-fedora test-debian clean
+.PHONY: help key icons build publish bump prune serve test test-fedora test-debian clean
