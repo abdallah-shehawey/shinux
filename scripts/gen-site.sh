@@ -35,12 +35,13 @@ gpgkey=${BASE_URL}/RPM-GPG-KEY-${REPO_ID}
 metadata_expire=6h
 EOF
 
+# The flat repository on the release rather than the dists/ tree on Pages: a
+# release asset is a download GitHub counts and a Pages hit is not. See the
+# same stanza in gen-release-packages.sh for why the shape changes.
 cat > "${OUT_DIR}/${REPO_ID}.sources" <<EOF
 Types: deb
-URIs: ${BASE_URL}/deb
-Suites: ${DEB_SUITE}
-Components: ${DEB_COMPONENT}
-Architectures: ${DEB_ARCHS}
+URIs: ${ASSET_ROOT}
+Suites: ${POOL_TAG}/
 Signed-By: /etc/apt/keyrings/${REPO_ID}.gpg
 EOF
 
@@ -54,6 +55,10 @@ set -eu
 BASE_URL="${BASE_URL}"
 REPO_ID="${REPO_ID}"
 RELEASE_RPM="${RELEASE_RPM}"
+# Where the packages themselves are. Metadata, keys and signatures still come
+# from Pages; only the download of a package moves, because that is the one
+# GitHub counts.
+ASSET_BASE="${ASSET_BASE}"
 EOF
 cat >> "${OUT_DIR}/install.sh" <<'EOF'
 
@@ -87,7 +92,15 @@ elif command -v apt-get >/dev/null 2>&1; then
   chmod 0644 "/etc/apt/keyrings/${REPO_ID}.gpg"
   fetch "${BASE_URL}/${REPO_ID}.sources" "/etc/apt/sources.list.d/${REPO_ID}.sources"
   apt-get update
-  apt-get install -y "${REPO_ID}-archive-keyring"
+  # --force-confnew, because this script has just written that same sources
+  # file by hand and the package ships it as a conffile. The two are generated
+  # from one template and normally match byte for byte, so dpkg says nothing --
+  # but if they ever drift, dpkg stops at an interactive conffile prompt, and
+  # this script is run through a pipe with no stdin: "end of file on stdin at
+  # conffile prompt", and the install fails having already added the repository.
+  # The package's copy is the canonical one, so taking it is the right answer.
+  DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    -o Dpkg::Options::=--force-confnew "${REPO_ID}-archive-keyring"
   echo "==> done. try: sudo apt install hello-${REPO_ID}"
 
 elif command -v pacman >/dev/null 2>&1; then
@@ -97,8 +110,12 @@ elif command -v pacman >/dev/null 2>&1; then
   install -d -m 0755 /etc/pacman.d/gnupg
   pacman-key --add "$tmp/${REPO_ID}.gpg" >/dev/null
   pacman-key --lsign-key "$(gpg --show-keys --with-colons "$tmp/${REPO_ID}.gpg" | awk -F: '$1 == "fpr" { print $10; exit }')" >/dev/null
+  # The release, not Pages: pacman asks for shinux.db and then for a bare
+  # %FILENAME% off this one URL, and both are release assets, so the install is
+  # a download GitHub counts. Rewritten on every run, which is how a machine
+  # that added the repository before this moves over -- re-run install.sh.
   cat > "/etc/pacman.d/${REPO_ID}-mirrorlist" <<EOF_MIRROR
-Server = ${BASE_URL}/arch
+Server = ${ASSET_BASE}
 EOF_MIRROR
   if ! grep -q '^\[${REPO_ID}\]$' /etc/pacman.conf; then
     cat >> /etc/pacman.conf <<EOF_REPO

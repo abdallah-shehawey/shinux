@@ -87,3 +87,62 @@ while IFS= read -r f; do
 done < <(pool_artefacts)
 
 info "pool assets: ${uploaded} uploaded, ${skipped} already published"
+
+# ------------------------------------------------------------- the metadata --
+# apt's flat index and pacman's database. Unlike a package these describe the
+# pool as it stands, so they are replaced rather than added to -- and replacing
+# means deleting first, because GitHub cannot overwrite an asset in place.
+#
+# Whether they need replacing at all is decided without downloading them: each
+# one is uploaded with its own sha256 in the asset's `label`, which the API
+# hands back for free. Fetching the old copy to compare would have counted as a
+# download of it, on a release whose whole point is that its counters mean
+# something.
+if [ ! -d "${POOL_META_DIR}" ]; then
+  info "no pool metadata staged; apt and pacman keep reading from Pages"
+  exit 0
+fi
+
+declare -A meta_id=() meta_label=()
+while IFS=$'\t' read -r name id; do
+  [ -n "${name}" ] || continue
+  meta_id["${name}"]="${id}"
+done < <(pool_asset_ids "${release_id}")
+
+while IFS=$'\t' read -r name label; do
+  [ -n "${name}" ] || continue
+  meta_label["${name}"]="${label}"
+done < <(pool_asset_labels "${release_id}")
+
+replaced=0 unchanged=0
+while IFS= read -r name; do
+  src="${POOL_META_DIR}/${name}"
+  [ -f "${src}" ] || continue
+  sum="sha256:$(sha256sum "${src}" | cut -d' ' -f1)"
+
+  if [ "${meta_label["${name}"]:-}" = "${sum}" ]; then
+    unchanged=$(( unchanged + 1 ))
+    continue
+  fi
+
+  # Delete then upload, in that order and back to back: for the second in
+  # between, a client updating right now gets a 404 on this one file and
+  # retries. Publishes are rare and the alternative is an index that disagrees
+  # with the pool, which is silent and lasts until the next one.
+  if [ -n "${meta_id["${name}"]:-}" ]; then
+    code="$(gh_api DELETE "${pool_api}/releases/assets/${meta_id["${name}"]}")"
+    case "${code}" in
+      204|404) ;;
+      *) pool_fail "could not delete the old ${name} (HTTP ${code})" ;;
+    esac
+  fi
+
+  info "publishing ${name} ($(du -h "${src}" | cut -f1))"
+  code="$(gh_api POST "${pool_uploads}/releases/${release_id}/assets?name=${name}&label=${sum}" \
+          --header "Content-Type: application/octet-stream" \
+          --data-binary "@${src}")"
+  [ "${code}" = "201" ] || pool_fail "upload of ${name} failed (HTTP ${code})"
+  replaced=$(( replaced + 1 ))
+done < <(pool_metadata_names)
+
+info "pool metadata: ${replaced} republished, ${unchanged} unchanged"

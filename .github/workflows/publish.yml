@@ -85,12 +85,18 @@ jobs:
       # re-downloads its own pool on every publish would drown the handful of
       # real installs in its own noise. A miss just falls through to the
       # release, which is the authority either way.
+      # The v2 prefix retires every cache written before the pacman fixes. Those
+      # caches hold docs/arch as it was built by a generator that produced
+      # packages no pacman could read -- ".PKGINFO" was not the first member and
+      # the database named its entries after the architecture instead of the
+      # pkgrel -- and the matching assets have been deleted from the release, so
+      # a warm restore would put them straight back. Cold once, warm again after.
       - name: Restore the published pool
         uses: actions/cache@v4
         with:
           path: docs
-          key: shinux-pool-${{ github.sha }}
-          restore-keys: shinux-pool-
+          key: shinux-pool-v2-${{ github.sha }}
+          restore-keys: shinux-pool-v2-
 
       # Whatever the cache did not have. On a cold cache this is the whole
       # pool; normally it is nothing at all, because the only new package is

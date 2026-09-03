@@ -59,10 +59,21 @@ def desc(fields: dict[str, list[str]], package: pathlib.Path, signature: pathlib
         ("URL", value(fields, "url")),
         ("LICENSE", value(fields, "license")),
     ]
-    for key in ("depend", "conflict", "provides", "replaces", "optdepend"):
+    # .PKGINFO names these in the singular; a sync database names them in the
+    # plural, and pacman answers anything else with "unknown key '%DEPEND%' in
+    # sync database" and then ignores the dependency entirely. Mapped rather
+    # than upper()d, because the two vocabularies do not line up: "provides" is
+    # already plural on both sides.
+    db_key = {
+        "depend": "DEPENDS", "conflict": "CONFLICTS", "provides": "PROVIDES",
+        "replaces": "REPLACES", "optdepend": "OPTDEPENDS",
+        "makedepend": "MAKEDEPENDS", "checkdepend": "CHECKDEPENDS",
+        "group": "GROUPS",
+    }
+    for key, header in db_key.items():
         values = fields.get(key, [])
         if values:
-            lines.append((key.upper() if key != "optdepend" else "OPTDEPEND", "\n".join(values)))
+            lines.append((header, "\n".join(values)))
 
     return "".join(f"%{key}%\n{item}\n\n" for key, item in lines)
 
@@ -108,8 +119,14 @@ def write_db(arch_dir: pathlib.Path, repo_id: str, key_id: str) -> None:
             fields = pkginfo(package)
             name = value(fields, "pkgname")
             version = value(fields, "pkgver")
-            arch = value(fields, "arch")
-            entry = f"{name}-{version}-{arch}"
+            # <pkgname>-<pkgver>-<pkgrel>, and .PKGINFO's pkgver already ends
+            # in -<pkgrel>. The architecture does NOT belong here: pacman
+            # splits this directory name from the right and compares the halves
+            # against %NAME% and %VERSION%, so "vidtime-1.2.0-any" was read as
+            # version 1.2.0 with pkgrel "any" and every package in the database
+            # came back as "shinux database is inconsistent: name mismatch".
+            # That made `pacman -S` fail for the whole repository.
+            entry = f"{name}-{version}"
             (dbroot / entry).mkdir()
             (dbroot / entry / "desc").write_text(
                 desc(fields, package, package.with_name(package.name + ".sig")), encoding="utf-8"

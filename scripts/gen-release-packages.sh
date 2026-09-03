@@ -100,19 +100,35 @@ mkdir -p "${key}/src/etc/apt/keyrings" "${key}/src/etc/apt/sources.list.d"
 cp "${KEY_GPG}" "${key}/src/etc/apt/keyrings/${REPO_ID}.gpg"
 chmod 0644 "${key}/src/etc/apt/keyrings/${REPO_ID}.gpg"
 
+# A flat repository on the release, not the dists/ tree on Pages. Pages
+# publishes no statistics, so every `apt install` from here used to be a
+# download nobody could see; a release asset is counted. apt has no xml:base to
+# redirect just the packages with, so the index moves too -- and `Suites:` with
+# a trailing slash and no `Components:` is what tells apt to read
+# <URIs>/<Suites>/{InRelease,Packages} and to resolve each Filename against the
+# same directory. Every name involved is slash-free, which is the only kind a
+# release asset can have.
+#
+# Architectures is left out deliberately: one flat index carries every
+# architecture, each stanza labelled with its own, and apt already filters on
+# what dpkg says the machine is.
+#
+# The dists/ tree stays on Pages and keeps working, so a machine that has not
+# upgraded this package yet is not affected.
 cat > "${key}/src/etc/apt/sources.list.d/${REPO_ID}.sources" <<SRCEOF
 Types: deb
-URIs: ${BASE_URL}/deb
-Suites: ${DEB_SUITE}
-Components: ${DEB_COMPONENT}
-Architectures: ${DEB_ARCHS}
+URIs: ${ASSET_ROOT}
+Suites: ${POOL_TAG}/
 Signed-By: /etc/apt/keyrings/${REPO_ID}.gpg
 SRCEOF
 chmod 0644 "${key}/src/etc/apt/sources.list.d/${REPO_ID}.sources"
 
 cat > "${key}/metadata.env" <<METAEOF
 PKG_NAME="${REPO_ID}-archive-keyring"
-PKG_VERSION="1.1"
+# 1.2 moves the sources file onto the release. Without the bump apt would never
+# offer it and no existing machine would ever change where it downloads from --
+# the same trap the rename hit at 1.1.
+PKG_VERSION="1.2"
 PKG_RELEASE="1"
 PKG_FORMATS="deb"
 PKG_SUMMARY="${REPO_NAME} apt sources and signing key"

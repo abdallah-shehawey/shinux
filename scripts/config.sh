@@ -21,7 +21,27 @@ BASE_URL="${BASE_URL:-https://${GITHUB_USER}.github.io/${GITHUB_REPO}}"
 # well and primary.xml carries an xml:base pointing at them -- metadata, keys
 # and signatures still come from Pages, and no client configuration changes.
 POOL_TAG="${POOL_TAG:-pool}"
-ASSET_BASE="${ASSET_BASE:-https://github.com/${GITHUB_USER}/${GITHUB_REPO}/releases/download/${POOL_TAG}}"
+ASSET_ROOT="${ASSET_ROOT:-https://github.com/${GITHUB_USER}/${GITHUB_REPO}/releases/download}"
+ASSET_BASE="${ASSET_BASE:-${ASSET_ROOT}/${POOL_TAG}}"
+
+# apt and pacman have no xml:base. Both resolve a package's recorded filename
+# against the one URL their client configuration names, so the only way to move
+# their downloads onto the counted release is to move the *metadata* there too
+# -- which works because a release is a flat namespace and both formats can be
+# served flat:
+#
+#   apt    a "flat repository": `URIs: .../releases/download` with
+#          `Suites: pool/` and no Components. apt then fetches
+#          .../download/pool/{InRelease,Packages,Packages.gz} -- asset names
+#          with no slash in them -- and resolves `Filename:` against the same
+#          directory, so a bare `foo_1.0-1_all.deb` is an asset URL.
+#   pacman `Server = .../releases/download/pool`. It already asks for
+#          `shinux.db` and a bare %FILENAME% off that one base, so nothing but
+#          the base changes.
+#
+# The Pages trees stay exactly where they are and keep working: a machine that
+# added the repository before this still reads from them. Clients move over
+# when they upgrade shinux-archive-keyring, or re-run install.sh.
 
 # On where those assets exist, off everywhere else. A local `make repo` that
 # wrote the asset base into the metadata would send `make serve` and
@@ -49,6 +69,7 @@ DEB_COMPONENT="main"
 # --- derived paths, do not edit -------------------------------------------
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build}"
+POOL_META_DIR="${POOL_META_DIR:-${BUILD_DIR}/pool-meta}"   # flat apt+pacman metadata, uploaded as assets
 OUT_DIR="${OUT_DIR:-${ROOT_DIR}/docs}"   # published by GitHub Pages (main branch, /docs)
 RPM_DIR="${OUT_DIR}/rpm"
 DEB_DIR="${OUT_DIR}/deb"
@@ -58,7 +79,7 @@ KEY_GPG="${OUT_DIR}/${REPO_ID}.gpg"           # dearmored, used by apt signed-by
 GNUPGHOME_DIR="${ROOT_DIR}/.gnupg"
 
 export GITHUB_USER GITHUB_REPO REPO_ID REPO_NAME BASE_URL \
-       POOL_TAG ASSET_BASE ASSET_POOL \
+       POOL_TAG ASSET_ROOT ASSET_BASE ASSET_POOL POOL_META_DIR \
        MAINTAINER_NAME MAINTAINER_EMAIL GPG_KEY_UID PACKAGE_VENDOR \
        DEB_ARCHS DEB_SUITE DEB_COMPONENT \
        ROOT_DIR BUILD_DIR OUT_DIR RPM_DIR DEB_DIR ARCH_DIR KEY_ASC KEY_GPG GNUPGHOME_DIR

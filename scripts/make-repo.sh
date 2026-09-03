@@ -142,10 +142,21 @@ done
 dists="${DEB_DIR}/dists/${DEB_SUITE}"
 before="$(sha256sum "${dists}/Release" 2>/dev/null | cut -d' ' -f1 || true)"
 
-python3 "${ROOT_DIR}/scripts/gen-apt-metadata.py" \
-  --root "${DEB_DIR}" --suite "${DEB_SUITE}" --component "${DEB_COMPONENT}" \
-  --archs "${DEB_ARCHS}" --origin "${REPO_ID}" --label "${REPO_NAME}" \
-  --description "${REPO_NAME} for Debian and Ubuntu"
+apt_args=(--root "${DEB_DIR}" --suite "${DEB_SUITE}" --component "${DEB_COMPONENT}"
+          --archs "${DEB_ARCHS}" --origin "${REPO_ID}" --label "${REPO_NAME}"
+          --description "${REPO_NAME} for Debian and Ubuntu")
+
+# The same index a second time, flattened, for the release assets. apt cannot
+# be pointed at the packages the way dnf can -- there is no xml:base for a
+# Filename -- so the whole index moves instead, and a flat repository is the
+# one layout whose every path is a legal asset name. The dists/ tree above is
+# untouched and still served from Pages for clients added before this.
+if [ "${ASSET_POOL}" = "1" ]; then
+  rm -rf "${POOL_META_DIR}"
+  apt_args+=(--flat-out "${POOL_META_DIR}" --flat-prefix "${POOL_TAG}")
+fi
+
+python3 "${ROOT_DIR}/scripts/gen-apt-metadata.py" "${apt_args[@]}"
 
 after="$(sha256sum "${dists}/Release" | cut -d' ' -f1)"
 if [ "${before}" != "${after}" ] || [ ! -f "${dists}/InRelease" ] || [ ! -f "${dists}/Release.gpg" ]; then
@@ -200,6 +211,35 @@ done
 
 python3 "${ROOT_DIR}/scripts/gen-pacman-repo.py" \
   --arch-dir "${ARCH_DIR}" --repo-id "${REPO_ID}" --key-id "${FPR}"
+
+# ------------------------------------------------- metadata for the release --
+# What apt and pacman have to read from github.com rather than from Pages, so
+# that the package they then fetch is an asset GitHub counts. Everything here
+# is REPLACED on every publish rather than added to -- it describes the pool as
+# it is now -- which is the opposite rule to the packages themselves, and
+# pool-assets.sh keeps the two apart by name.
+if [ "${ASSET_POOL}" = "1" ]; then
+  mkdir -p "${POOL_META_DIR}"
+
+  # Signed exactly like the dists/ one: same key, same two shapes. apt takes
+  # InRelease alone, but Release + Release.gpg is what an older client asks for
+  # first and a 404 there is a warning on every update.
+  info "signing the flat apt Release"
+  gpg --batch --yes --detach-sign --armor --local-user "${FPR}" \
+      -o "${POOL_META_DIR}/Release.gpg" "${POOL_META_DIR}/Release"
+  gpg --batch --yes --clearsign --local-user "${FPR}" \
+      -o "${POOL_META_DIR}/InRelease" "${POOL_META_DIR}/Release"
+
+  # pacman needs no new format at all: it already asks for these four names,
+  # and for a bare %FILENAME%, off whatever single URL Server points at. Only
+  # that URL changes.
+  for f in "${REPO_ID}.db" "${REPO_ID}.db.sig" "${REPO_ID}.files" "${REPO_ID}.files.sig"; do
+    [ -f "${ARCH_DIR}/${f}" ] || die "gen-pacman-repo.py did not write ${f}"
+    cp -f "${ARCH_DIR}/${f}" "${POOL_META_DIR}/${f}"
+  done
+
+  info "pool metadata staged in ${POOL_META_DIR#"${ROOT_DIR}/"}"
+fi
 
 # ------------------------------------------------------------- landing page --
 "${ROOT_DIR}/scripts/gen-site.sh"

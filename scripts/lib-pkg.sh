@@ -344,9 +344,22 @@ build_arch() {
   # --zstd would take zstd's default level 3. makepkg ships -20 and rpm here
   # compresses at 19; at level 3 the Electron package is 98 MB against 70, and
   # docs/ is committed to a repository GitHub refuses a 100 MB file in.
+  # .PKGINFO has to be the FIRST member. `tar -cf "$out" .` put "./" there
+  # instead and pacman answered "missing package metadata ... invalid or
+  # corrupted package" for every package in the repository -- it reads the
+  # metadata off the front of the stream rather than searching the archive.
+  # Naming the members explicitly is what fixes the order; --sort=name still
+  # applies inside each directory tar then walks, so the result stays
+  # reproducible.
+  local members
+  # `|| true`: shinux-scripts is a metapackage and stages no files at all, so
+  # grep matches nothing, exits 1, and set -e would end the build there.
+  members="$(cd "$work" && ls -A | grep -v '^\.PKGINFO$' | LC_ALL=C sort || true)"
+  # shellcheck disable=SC2086 -- deliberate word splitting: these are top-level
+  # directory names from the staged tree (usr, etc, opt), never anything quoted.
   ( cd "$work" && tar --sort=name --mtime='UTC 1970-01-01' \
       --owner=0 --group=0 --numeric-owner \
-      --use-compress-program='zstd -19 -T0' -cf "$out" . )
+      --use-compress-program='zstd -19 -T0' -cf "$out" .PKGINFO $members )
 }
 
 # vim: set ft=sh:

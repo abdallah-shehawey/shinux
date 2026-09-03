@@ -79,6 +79,28 @@ pool_artefacts() {
   done
 }
 
+# The metadata assets: what apt and pacman read from github.com so that the
+# package they fetch next is an asset GitHub counts. Fixed names, because both
+# clients ask for these exact ones off the single URL they are configured with.
+#
+# These are the one thing in the release that is REPLACED rather than added to.
+# A package asset is immutable on purpose -- re-uploading means deleting first,
+# and the download count dies with the asset -- but an index that still
+# describes last month's pool is worse than useless, so these are deleted and
+# re-uploaded whenever their bytes change. The counter on an index is not a
+# number anybody wants.
+pool_metadata_names() {
+  printf '%s\n' Packages Packages.gz Release Release.gpg InRelease \
+                 "${REPO_ID}.db" "${REPO_ID}.db.sig" \
+                 "${REPO_ID}.files" "${REPO_ID}.files.sig"
+}
+
+pool_is_metadata() {
+  local name="$1" m
+  while IFS= read -r m; do [ "$m" = "$name" ] && return 0; done < <(pool_metadata_names)
+  return 1
+}
+
 # Where an asset goes when it comes back down.
 asset_destination() {
   local name="$1"
@@ -88,6 +110,40 @@ asset_destination() {
     *.pkg.tar.zst|*.pkg.tar.zst.sig) printf '%s/%s' "${ARCH_DIR}" "$name" ;;
     *) return 1 ;;
   esac
+}
+
+# "<name>\t<id>" per asset. Deleting one needs its id, which the download URL
+# does not carry.
+pool_asset_ids() {
+  local id="$1" page=1 code chunk
+  while :; do
+    code="$(gh_api GET "${pool_api}/releases/${id}/assets?per_page=100&page=${page}")"
+    [ "${code}" = "200" ] || pool_fail "could not list the release assets (HTTP ${code})"
+    chunk="$(pool_json 'import json,sys
+for a in json.load(sys.stdin):
+    print(a["name"], a["id"], sep="\t")')"
+    [ -n "${chunk}" ] || break
+    printf '%s\n' "${chunk}"
+    page=$(( page + 1 ))
+  done
+}
+
+# "<name>\t<label>" per asset. pool-assets.sh writes each metadata asset's own
+# sha256 into its label, so a later run can tell whether the bytes changed
+# without downloading the copy that is up there -- which would have counted as
+# a download of it.
+pool_asset_labels() {
+  local id="$1" page=1 code chunk
+  while :; do
+    code="$(gh_api GET "${pool_api}/releases/${id}/assets?per_page=100&page=${page}")"
+    [ "${code}" = "200" ] || pool_fail "could not list the release assets (HTTP ${code})"
+    chunk="$(pool_json 'import json,sys
+for a in json.load(sys.stdin):
+    print(a["name"], a.get("label") or "", sep="\t")')"
+    [ -n "${chunk}" ] || break
+    printf '%s\n' "${chunk}"
+    page=$(( page + 1 ))
+  done
 }
 
 # The package an asset is a version of, so the newest few can be picked without
