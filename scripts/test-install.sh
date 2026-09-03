@@ -4,6 +4,7 @@
 #
 #   scripts/test-install.sh fedora
 #   scripts/test-install.sh debian
+#   scripts/test-install.sh arch
 #
 # Nothing here touches docs/ or the committed pool.
 set -euo pipefail
@@ -243,7 +244,90 @@ case "$family" in
       test ! -e /etc/xdg/autostart/io.github.shehawey.whatsapp.desktop
 '
     ;;
-  *) die "unknown family '${family}' (expected fedora or debian)" ;;
+  arch)
+    image="${warm:-docker.io/library/archlinux:base}"
+    script='set -eu
+      # The archlinux image ships NoExtract rules that throw away man pages,
+      # info pages, docs and every non-English locale to keep the layer small
+      # -- "NoExtract = usr/share/man/*" among them. A man-page check inside a
+      # container that has them is checking nothing: the file is in the package
+      # and simply never lands on disk. Same reason the debian family removes
+      # docker-clean. Strip them so the test sees what a real machine sees.
+      sed -i "/^NoExtract/d" /etc/pacman.conf
+
+      pacman -Sy --noconfirm --needed curl man-db bash-completion >/dev/null 2>&1
+
+      echo "### trusting the key, then adding the repository by hand"
+      curl -fsSL '"${BASE_URL}"'/'"${REPO_ID}"'.gpg -o /tmp/key.gpg
+      pacman-key --init >/dev/null 2>&1
+      pacman-key --add /tmp/key.gpg >/dev/null 2>&1
+      fpr=$(gpg --show-keys --with-colons /tmp/key.gpg | awk -F: "\$1==\"fpr\"{print \$10;exit}")
+      pacman-key --lsign-key "$fpr" >/dev/null 2>&1
+      printf "Server = %s/arch\n" '"${BASE_URL}"' > /etc/pacman.d/'"${REPO_ID}"'-mirrorlist
+      printf "\n[%s]\nInclude = /etc/pacman.d/%s-mirrorlist\nSigLevel = Required DatabaseOptional\n" \
+        '"${REPO_ID}"' '"${REPO_ID}"' >> /etc/pacman.conf
+
+      # The whole point of this family. A database whose entry directories do
+      # not parse comes back as "database is inconsistent: name mismatch" on
+      # every package, and a %DEPEND% where %DEPENDS% belongs comes back as
+      # "unknown key ... in sync database" -- both of which pacman prints and
+      # then carries on from, so nothing but an explicit check catches them.
+      echo "### the sync database parses cleanly"
+      pacman -Sy --noconfirm 2>&1 | tee /tmp/sync
+      if grep -Eqi "inconsistent|unknown key" /tmp/sync; then
+        echo "FAIL: pacman rejected the database"; exit 1
+      fi
+
+      echo "### and the dependencies survived the round trip"
+      pacman -Si vidtime | grep -E "^Depends On" | grep -q ffmpeg
+
+      # A package whose .PKGINFO is not the first member of the archive is
+      # "missing package metadata ... invalid or corrupted package", and only a
+      # real install says so.
+      echo "### installing every package, with signatures required"
+      pacman -S --noconfirm '"${REPO_ID}"'-scripts hello-'"${REPO_ID}"' >/dev/null
+
+      echo "### the metapackage pulled in its dependencies"
+      pacman -Q vidtime padnum meet hashnum dlup antigravity-update update-every-thing
+
+      echo "### every command answers --version and --help"
+      for c in vidtime padnum meet hashnum dlup antigravity-update update-every-thing; do
+        "$c" --version
+        "$c" --help >/dev/null
+      done
+
+      echo "### man pages are installed and readable"
+      for c in vidtime padnum meet hashnum dlup antigravity-update update-every-thing; do
+        man -w "$c" >/dev/null
+      done
+
+      echo "### bash completions are installed"
+      ls /usr/share/bash-completion/completions/ | sort
+
+      echo "### a command actually runs"
+      hello-'"${REPO_ID}"'
+      cd /tmp && mkdir -p pn && cd pn && touch "1 a.txt" "2 b.txt" "10 c.txt"
+      padnum && ls -1
+
+      echo "### the desktop application installs and is complete"
+      pacman -S --noconfirm whatsapp >/dev/null
+      whatsapp --version
+      whatsapp --help >/dev/null
+      if command -v ldd >/dev/null; then
+        ldd /usr/bin/whatsapp | grep "not found" && { echo "FAIL: unresolved libraries"; exit 1; }
+      fi
+      test -f /usr/share/applications/io.github.shehawey.whatsapp.desktop
+      test -f /etc/xdg/autostart/io.github.shehawey.whatsapp.desktop
+      grep -q -- "--hidden" /etc/xdg/autostart/io.github.shehawey.whatsapp.desktop
+      test -f /usr/share/icons/hicolor/48x48/apps/io.github.shehawey.whatsapp.png
+
+      echo "### and it uninstalls cleanly"
+      pacman -Rns --noconfirm whatsapp >/dev/null
+      test ! -e /usr/bin/whatsapp
+      test ! -e /etc/xdg/autostart/io.github.shehawey.whatsapp.desktop
+'
+    ;;
+  *) die "unknown family '${family}' (expected fedora, debian or arch)" ;;
 esac
 
 info "running the install test in ${image}"

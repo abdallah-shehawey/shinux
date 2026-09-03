@@ -27,7 +27,7 @@ prune:  ## keep only the newest KEEP=3 versions of each package
 serve:  ## serve docs/ on http://127.0.0.1:8099 for manual testing
 	@scripts/serve.sh
 
-test: test-fedora test-debian  ## end-to-end install test on both families
+test: test-fedora test-debian test-arch  ## end-to-end install test on all three families
 
 test-fedora:  ## install from a throwaway local repo inside a Fedora container
 	@scripts/test-install.sh fedora
@@ -35,8 +35,11 @@ test-fedora:  ## install from a throwaway local repo inside a Fedora container
 test-debian:  ## install from a throwaway local repo inside a Debian container
 	@scripts/test-install.sh debian
 
+test-arch:  ## install from a throwaway local repo inside an Arch container
+	scripts/test-install.sh arch
+
 clean:  ## remove build artefacts (docs/ is left alone)
 	@rm -rf build
 	@echo "cleaned build/"
 
-.PHONY: help key icons build publish bump prune serve test test-fedora test-debian clean
+.PHONY: help key icons build publish bump prune serve test test-fedora test-debian test-arch clean
