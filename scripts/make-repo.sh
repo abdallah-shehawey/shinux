@@ -62,6 +62,32 @@ deb_content_id() {
   } | sha256sum | cut -d' ' -f1
 }
 
+arch_content_id() {
+  # These archives are already byte-reproducible -- mtimes pinned to the epoch,
+  # members sorted, owner 0 -- so the only field that moves on its own is
+  # .PKGINFO's builddate, which follows the package directory's last commit and
+  # says nothing about what ships. Same exclusion as rpm_content_id makes for
+  # BUILDTIME. size is derived from the payload and comes with it.
+  { tar --use-compress-program=unzstd -xOf "$1" .PKGINFO | grep -Ev '^(builddate|size) ='
+    tar --use-compress-program=unzstd -tvf "$1" | grep -v '\.PKGINFO$'
+    tar --use-compress-program=unzstd -xOf "$1" --exclude=.PKGINFO
+  } 2>/dev/null | sha256sum | cut -d' ' -f1
+}
+
+# A package whose name is already an asset in the pool is frozen. GitHub cannot
+# replace a release asset in place -- deleting and re-uploading is the one way,
+# and it takes the download count with it, which is why pool-assets.sh is
+# add-only. Overwriting the copy in docs/ anyway would leave the metadata
+# describing bytes no client can fetch: dnf and pacman both verify the checksum
+# the index gives them against the file they downloaded from the release, and
+# every install of that package would fail on it. So the published bytes win
+# and the change waits for the bump the warning already asks for.
+keep_published() {
+  [ "${ASSET_POOL}" = "1" ] || return 1
+  printf '         keeping the published copy; a release asset cannot be replaced.\n' >&2
+  return 0
+}
+
 stale_warning=0
 
 # --------------------------------------------------------------- RPM side ----
@@ -75,6 +101,7 @@ for f in "${BUILD_DIR}/out/rpm"/*.rpm; do
     printf '\033[33mwarning:\033[0m %s changed but its version did not; clients that already\n' "$(basename "$f")" >&2
     printf '         cached it will never see the change. Run: make bump PKG=<name>\n' >&2
     stale_warning=1
+    keep_published && continue
   fi
   cp -f "$f" "$dest"
   info "signing $(basename "$f")"
@@ -135,6 +162,7 @@ for f in "${BUILD_DIR}/out/deb"/*.deb; do
     printf '\033[33mwarning:\033[0m %s changed but its version did not; clients that already\n' "$name" >&2
     printf '         cached it will never see the change. Run: make bump PKG=<name>\n' >&2
     stale_warning=1
+    keep_published && continue
   fi
   cp -f "$f" "$dest"
 done
@@ -171,7 +199,13 @@ fi
 # A stable, short path for the keyring package, so adding the repository on a
 # deb system is one command instead of four. The pool path carries the version
 # and the pool layout, which makes for a URL nobody can type.
-keyring="$(ls -1 "${DEB_DIR}/pool/${DEB_COMPONENT}"/*/"${REPO_ID}-archive-keyring"/*.deb 2>/dev/null | sort -V | tail -1)"
+# find, not `ls -1 <glob>`: nullglob is on from the rpm side up, so an
+# unmatched glob leaves ls with no arguments at all and it lists the current
+# directory instead of failing. That put a source-tree directory name in
+# $keyring and cp died on it -- and with a file there rather than a directory
+# it would have quietly published something else as the keyring.
+keyring="$(find "${DEB_DIR}/pool/${DEB_COMPONENT}" -mindepth 3 -maxdepth 3 -type f \
+             -path "*/${REPO_ID}-archive-keyring/*.deb" 2>/dev/null | sort -V | tail -1)"
 if [ -n "${keyring}" ]; then
   cp -f "${keyring}" "${OUT_DIR}/${REPO_ID}-keyring.deb"
 fi
@@ -181,10 +215,24 @@ fi
 # their internal integrity when installing a local file. Keep every version so
 # users can download an exact build or use the latest release asset.
 for f in "${BUILD_DIR}/out/arch"/*.pkg.tar.zst; do
-  dest="${ARCH_DIR}/$(basename "$f")"
-  [ -f "$dest" ] && cmp -s "$f" "$dest" && continue
+  name="$(basename "$f")"
+  dest="${ARCH_DIR}/${name}"
+  # cmp alone used to decide this, which is stricter than the rpm and deb sides
+  # and says nothing when it fails: any change to what build_arch writes into
+  # .PKGINFO -- a dependency, a backup= line -- silently rewrote a package that
+  # was already published under that exact name.
+  if [ -f "$dest" ]; then
+    cmp -s "$f" "$dest" && continue
+    if [ "$(arch_content_id "$f")" = "$(arch_content_id "$dest")" ]; then
+      continue
+    fi
+    printf '\033[33mwarning:\033[0m %s changed but its version did not; clients that already\n' "$name" >&2
+    printf '         cached it will never see the change. Run: make bump PKG=<name>\n' >&2
+    stale_warning=1
+    keep_published && continue
+  fi
   cp -f "$f" "$dest"
-  info "published $(basename "$f")"
+  info "published ${name}"
 done
 
 # Stable aliases make the terminal installer independent of package versions.
