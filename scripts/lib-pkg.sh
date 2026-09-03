@@ -331,6 +331,15 @@ build_arch() {
     echo "license = ${PKG_LICENSE}"
     echo "size = ${install_size}"
     for dep in ${ARCH_DEPENDS:-}; do echo "depend = ${dep}"; done
+    # Everything under /etc is configuration, the same rule build_rpm applies
+    # with %config(noreplace) and build_deb with DEBIAN/conffiles. Arch marks it
+    # with backup=, and a package that omits it has pacman overwrite the file on
+    # every upgrade with no .pacnew and no warning -- so an autostart entry the
+    # user edited to stop a client starting at login quietly starts it again.
+    # Paths in .PKGINFO are relative to the root, with no leading slash.
+    while IFS= read -r cfg; do
+      [ -n "$cfg" ] && echo "backup = ${cfg}"
+    done < <(cd "$work" && find etc -type f 2>/dev/null | LC_ALL=C sort)
     if [ -n "${ARCH_OPTDEPENDS:-}" ]; then
       IFS=';' read -ra opts <<< "${ARCH_OPTDEPENDS}"
       for opt in "${opts[@]}"; do echo "optdepend = ${opt}"; done

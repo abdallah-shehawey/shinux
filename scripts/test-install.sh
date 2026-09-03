@@ -321,6 +321,19 @@ case "$family" in
       grep -q -- "--hidden" /etc/xdg/autostart/io.github.shehawey.whatsapp.desktop
       test -f /usr/share/icons/hicolor/48x48/apps/io.github.shehawey.whatsapp.png
 
+      # backup= in .PKGINFO, the counterpart of %config(noreplace) and of
+      # DEBIAN/conffiles. Without it pacman overwrites the entry on every
+      # upgrade, so switching autostart off by editing it does not stick, and
+      # nothing but a real reinstall says so.
+      echo "### an edited autostart entry survives a reinstall"
+      pacman -Qii whatsapp | grep -q "etc/xdg/autostart/io.github.shehawey.whatsapp.desktop"
+      sed -i "s/^X-GNOME-Autostart-enabled=true/X-GNOME-Autostart-enabled=false/" \
+        /etc/xdg/autostart/io.github.shehawey.whatsapp.desktop
+      pacman -S --noconfirm whatsapp >/dev/null
+      grep -q "^X-GNOME-Autostart-enabled=false" \
+        /etc/xdg/autostart/io.github.shehawey.whatsapp.desktop \
+        || { echo "FAIL: the edit was overwritten"; exit 1; }
+
       echo "### and it uninstalls cleanly"
       pacman -Rns --noconfirm whatsapp >/dev/null
       test ! -e /usr/bin/whatsapp
