@@ -7,6 +7,24 @@ source "$(dirname "$0")/config.sh"
 FPR="$(cat "${ROOT_DIR}/.gpg-fingerprint" 2>/dev/null || echo unknown)"
 RELEASE_RPM="$(cd "${RPM_DIR}" 2>/dev/null && ls -1 ${REPO_ID}-release-*.rpm 2>/dev/null | sort -V | tail -1)"
 RELEASE_RPM="${RELEASE_RPM:-${REPO_ID}-release-1.0-1.noarch.rpm}"
+KEYRING_DEB="$(find "${DEB_DIR}" -type f -name "${REPO_ID}-archive-keyring_*.deb" 2>/dev/null \
+                 -printf '%f\n' | sort -V | tail -1)"
+KEYRING_DEB="${KEYRING_DEB:-${REPO_ID}-archive-keyring_1.0-1_all.deb}"
+
+# The two packages that add the repository are packages too, and they were the
+# last thing still fetched from Pages, which reports nothing. Everything else
+# here -- keys, signatures, the sources file -- has to stay on Pages: it is
+# read before this repository is trusted at all, and none of it is a download
+# worth counting. Off the pool these fall back to the Pages copies, which is
+# what `make serve` and the install tests need; the short docs/-keyring.deb
+# alias stays published either way, for links already handed out.
+if [ "${ASSET_POOL}" = "1" ]; then
+  RELEASE_RPM_URL="${ASSET_BASE}/${RELEASE_RPM}"
+  KEYRING_DEB_URL="${ASSET_BASE}/${KEYRING_DEB}"
+else
+  RELEASE_RPM_URL="${BASE_URL}/rpm/${RELEASE_RPM}"
+  KEYRING_DEB_URL="${BASE_URL}/${REPO_ID}-keyring.deb"
+fi
 FPR_PRETTY="$(echo "${FPR}" | sed 's/.\{4\}/& /g; s/ $//')"
 
 # Icons are generated once by scripts/make-icons.py and committed under site/,
@@ -54,7 +72,7 @@ set -eu
 
 BASE_URL="${BASE_URL}"
 REPO_ID="${REPO_ID}"
-RELEASE_RPM="${RELEASE_RPM}"
+RELEASE_RPM_URL="${RELEASE_RPM_URL}"
 # Where the packages themselves are. Metadata, keys and signatures still come
 # from Pages; only the download of a package moves, because that is the one
 # GitHub counts.
@@ -82,7 +100,7 @@ if command -v dnf >/dev/null 2>&1 || command -v yum >/dev/null 2>&1; then
   fetch "${BASE_URL}/RPM-GPG-KEY-${REPO_ID}" "$tmp/key" \
     || { echo "cannot reach ${BASE_URL}" >&2; exit 1; }
   rpm --import "$tmp/key"
-  "$pm" install -y "${BASE_URL}/rpm/${RELEASE_RPM}"
+  "$pm" install -y "${RELEASE_RPM_URL}"
   echo "==> done. try: sudo $pm install hello-${REPO_ID}"
 
 elif command -v apt-get >/dev/null 2>&1; then
@@ -421,14 +439,14 @@ cat > "${OUT_DIR}/index.html" <<HTMLEOF
 
   <div class="card" id="p-dnf" hidden>
 <pre><code>sudo rpm --import ${BASE_URL}/RPM-GPG-KEY-${REPO_ID}
-sudo dnf install -y ${BASE_URL}/rpm/${RELEASE_RPM}</code></pre>
+sudo dnf install -y ${RELEASE_RPM_URL}</code></pre>
     <p class="lead">The first line trusts the signing key, the second installs
        <code>/etc/yum.repos.d/${REPO_ID}.repo</code>. Skip the first and dnf asks you to
        confirm the key on your next install instead — same result, one prompt.</p>
   </div>
 
   <div class="card" id="p-apt" hidden>
-<pre><code>curl -fsSL ${BASE_URL}/${REPO_ID}-keyring.deb -o /tmp/${REPO_ID}-keyring.deb &amp;&amp; sudo apt install -y /tmp/${REPO_ID}-keyring.deb</code></pre>
+<pre><code>curl -fsSL ${KEYRING_DEB_URL} -o /tmp/${REPO_ID}-keyring.deb &amp;&amp; sudo apt install -y /tmp/${REPO_ID}-keyring.deb</code></pre>
     <p class="lead">Installs the sources entry and the signing key, then run <code>sudo apt update</code>.</p>
   </div>
 
