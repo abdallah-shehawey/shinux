@@ -1,0 +1,94 @@
+.TH MEET 1 "2026" "meet @VERSION@" "User Commands"
+.SH NAME
+meet \- open a saved meeting link by name
+.SH SYNOPSIS
+.B meet
+[\fINAME\fR]
+.br
+.B meet
+\fB\-\-add\fR \fINAME\fR \fIURL\fR
+.br
+.B meet
+\fB\-\-delete\fR \fINAME\fR
+.br
+.B meet
+\fB\-\-list\fR
+.SH DESCRIPTION
+.B meet
+keeps a short list of meeting URLs under names you choose, so a recurring
+call is
+.B meet standup
+instead of a bookmark hunt.
+.PP
+With no arguments it offers an interactive picker:
+.BR fzf (1)
+if it is installed, otherwise a plain numbered menu. With a name it opens
+that meeting through
+.BR xdg\-open (1).
+.PP
+Nothing about it is Google\-specific \(em any URL works.
+.SH OPTIONS
+.TP
+.BR \-a ", " \-\-add " " \fINAME\fR " " \fIURL\fR
+Save a meeting. The name may not contain spaces, and the URL must start with
+\fBhttp://\fR or \fBhttps://\fR. Adding a name that already exists is refused
+rather than silently duplicated.
+.TP
+.BR \-d ", " \-\-delete " " \fINAME\fR
+Forget a saved meeting.
+.TP
+.BR \-l ", " \-\-list
+List saved meetings, name and URL.
+.TP
+.BR \-p ", " \-\-print " " \fINAME\fR
+Print the URL to standard output instead of opening it.
+.TP
+.BR \-f ", " \-\-file " " \fIPATH\fR
+Read and write this links file instead of the default.
+.TP
+.BR \-n ", " \-\-dry\-run
+Show what would be opened without opening it.
+.TP
+.BR \-V ", " \-\-version
+Print the version and exit.
+.TP
+.BR \-h ", " \-\-help
+Show a usage summary and exit.
+.SH FILES
+.TP
+.B ~/.meet/links
+Used when it already exists, so upgrading does not lose your list.
+.TP
+.B ~/.config/meet/links
+Used otherwise. One \fBNAME URL\fR pair per line.
+.SH ENVIRONMENT
+.TP
+.B MEET_LINKS
+Overrides the links file, like
+.BR \-\-file .
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 1
+No such meeting, or nothing saved yet.
+.TP
+.B 2
+Bad usage, or
+.B xdg\-open
+is missing.
+.SH EXAMPLES
+.RS
+.EX
+meet \-\-add standup https://meet.google.com/abc\-defg\-hij
+meet standup
+meet \-\-list
+meet \-\-delete standup
+.EE
+.RE
+.SH SEE ALSO
+.BR xdg\-open (1),
+.BR fzf (1)
+.SH AUTHOR
+Written by @MAINTAINER@.

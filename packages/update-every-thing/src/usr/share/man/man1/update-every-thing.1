@@ -1,0 +1,125 @@
+.TH UPDATE\-EVERY\-THING 1 "2026" "update-every-thing @VERSION@" "User Commands"
+.SH NAME
+update\-every\-thing \- run every system update in one pass
+.SH SYNOPSIS
+.B update\-every\-thing
+[\fB\-c\fR \fIN\fR] [\fB\-\-with\-nvidia\fR]
+.SH DESCRIPTION
+Runs the updates a desktop needs, in an order that only refreshes repository
+metadata once, and prints a summary of what happened at the end.
+.PP
+The package manager is detected at startup \(em
+.BR dnf ,
+.BR yum ,
+or
+.BR apt\-get
+\(em and the right commands are used for that system. The two families need
+genuinely different handling, not the same command with a different name, so
+they are separate paths.
+.SS Steps
+.IP 1. 4
+Antigravity IDE, via
+.BR antigravity\-update (1)
+if it is installed. Its version is checked first, so nothing is downloaded when
+it is already current, and a machine without the IDE is not offered a
+first\-time install in the middle of a bulk update.
+.IP 2. 4
+System packages. On rpm systems, one
+.B upgrade \-\-refresh
+that carries the run's single metadata refresh. On deb systems, an
+.B update
+followed by a
+.BR full\-upgrade .
+.IP 3. 4
+Firmware, through
+.BR fwupdmgr (1).
+.IP 4. 4
+Flatpak applications.
+.IP 5. 4
+Snap packages, where snap exists.
+.IP 6. 4
+Ubuntu Pro security status, reported only. It covers the ESM archives a plain
+full\-upgrade does not, and whether to enable them is a decision, not something
+a bulk update should make for you.
+.IP 7. 4
+Drivers through
+.BR ubuntu\-drivers ,
+and only with
+.BR \-\-with\-nvidia .
+.IP 8. 4
+GNOME extensions \(em listed only. The distribution\-packaged ones were already
+upgraded in step 2, and running the package manager again for them just
+re\-downloads every repository to print "Nothing to do".
+.IP 9. 4
+Cleanup: autoremove, and clearing the package cache.
+.SS NVIDIA
+NVIDIA and CUDA packages are left alone by default, because replacing the
+driver under a running session can break it.
+.PP
+On rpm systems this is an
+.BR \-\-exclude .
+apt has no equivalent, so the packages are put on hold for the length of the
+run and released afterwards. Packages that were
+.I already
+held before the run are left held \(em they are not ours to release \(em and the
+holds this run adds are released even if you interrupt it.
+.SS Failure handling
+Nothing aborts the run. A step that fails is retried a bounded number of times
+and then given up on, so the run always reaches the end and you get one report
+instead of discovering a failure three commands later. A step whose tool is not
+installed is skipped and recorded as such.
+.PP
+Neither stdout nor stderr is redirected. That is deliberate: dnf, apt and
+flatpak draw progress on stderr and size it from the terminal, so piping either
+stream costs them the terminal and their progress bars come out duplicated and
+wrapped.
+.PP
+The sudo timestamp is refreshed in the background for the length of the run, so
+no password prompt appears in the middle of a long download.
+.PP
+Ctrl\-C stops the run and still prints the summary, marking the step that was
+running as interrupted.
+.SH OPTIONS
+.TP
+.BR \-c ", " \-\-retries " " \fIN\fR
+Attempt each failing step up to \fIN\fR times before giving up on it and moving
+to the next. Default \fB5\fR.
+.TP
+.B \-\-with\-nvidia
+Update NVIDIA and CUDA packages too.
+.TP
+.BR \-V ", " \-\-version
+Print the version and exit.
+.TP
+.BR \-h ", " \-\-help
+Show a usage summary and exit.
+.SH EXIT STATUS
+.TP
+.B 0
+Every step that ran succeeded.
+.TP
+.B 1
+At least one step failed.
+.TP
+.B 2
+Bad usage, or no supported package manager was found.
+.TP
+.B 130
+Interrupted with Ctrl\-C.
+.SH EXAMPLES
+.RS
+.EX
+update\-every\-thing
+update\-every\-thing \-c 3
+update\-every\-thing \-\-with\-nvidia
+.EE
+.RE
+.SH SEE ALSO
+.BR dnf (8),
+.BR apt\-get (8),
+.BR flatpak (1),
+.BR snap (8),
+.BR fwupdmgr (1),
+.BR antigravity\-update (1)
+.SH AUTHOR
+Written by @MAINTAINER@.

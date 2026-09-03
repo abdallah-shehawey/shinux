@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=WhatsApp
+Comment=WhatsApp Web
+Exec=/usr/bin/whatsapp %u
+Icon=io.github.shehawey.whatsapp
+Terminal=false
+Categories=Network;InstantMessaging;
+Keywords=whatsapp;chat;messaging;
+StartupNotify=true
+StartupWMClass=io.github.shehawey.whatsapp
+SingleMainWindow=true

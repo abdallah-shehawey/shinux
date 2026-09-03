@@ -1,0 +1,35 @@
+#compdef meet
+# zsh completion for meet
+
+_meet_links_file() {
+  if [[ -n "$MEET_LINKS" ]]; then
+    print -r -- "$MEET_LINKS"
+  elif [[ -f "$HOME/.meet/links" ]]; then
+    print -r -- "$HOME/.meet/links"
+  else
+    print -r -- "${XDG_CONFIG_HOME:-$HOME/.config}/meet/links"
+  fi
+}
+
+_meet_names() {
+  local file names
+  file="$(_meet_links_file)"
+  [[ -r "$file" ]] || return 1
+  names=(${(f)"$(awk '{print $1}' "$file" 2>/dev/null)"})
+  _describe -t meetings 'saved meeting' names
+}
+
+_meet() {
+  _arguments -s -S \
+    '(-a --add)'{-a,--add}'[save a new meeting]' \
+    '(-d --delete)'{-d,--delete}'[forget a saved meeting]' \
+    '(-l --list)'{-l,--list}'[list saved meetings]' \
+    '(-p --print)'{-p,--print}'[print the URL instead of opening it]' \
+    '(-f --file)'{-f,--file}'[use this links file]:links file:_files' \
+    '(-n --dry-run)'{-n,--dry-run}'[show what would open]' \
+    '(- *)'{-V,--version}'[print version and exit]' \
+    '(- *)'{-h,--help}'[show help and exit]' \
+    '*:meeting:_meet_names'
+}
+
+_meet "$@"

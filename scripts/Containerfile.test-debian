@@ -1,0 +1,18 @@
+# Warm image for scripts/test-install.sh debian. See Containerfile.test-fedora.
+#
+#   podman build -t localhost/shinux-test-debian -f scripts/Containerfile.test-debian .
+FROM docker.io/library/ubuntu:24.04
+
+# The Ubuntu image ships /etc/apt/apt.conf.d/docker-clean, which blanks
+# Dir::Cache::pkgcache and srcpkgcache to keep image layers small. That makes
+# `apt-cache --no-generate` -- exactly what apt's tab completion shells out to --
+# fail with "E: Could not open file" on a machine that is otherwise fine. Drop it
+# so the container behaves like a real install and the completion check means
+# something.
+RUN rm -f /etc/apt/apt.conf.d/docker-clean
+ENV DEBIAN_FRONTEND=noninteractive
+# The lists are deliberately kept: deleting them is the usual way to shrink an
+# image, but here they are the whole point -- without them the test spends the
+# best part of an hour re-fetching the Ubuntu archive index.
+RUN apt-get update -qq \
+ && apt-get install -y -qq curl ca-certificates gnupg man-db bash-completion

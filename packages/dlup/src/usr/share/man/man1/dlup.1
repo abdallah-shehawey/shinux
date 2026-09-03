@@ -1,0 +1,119 @@
+.TH DLUP 1 "2026" "dlup @VERSION@" "User Commands"
+.SH NAME
+dlup \- download media with yt\-dlp and push it straight to an rclone remote
+.SH SYNOPSIS
+.B dlup
+\fB\-r\fR \fIREMOTE\fR [\fIOPTION\fR]... \fIURL\fR...
+.br
+.B dlup
+\fB\-r\fR \fIREMOTE\fR [\fIOPTION\fR]... \fB\-f\fR \fILIST\fR
+.SH DESCRIPTION
+For each URL,
+.B dlup
+downloads it with
+.BR yt\-dlp (1)
+into a staging directory, uploads what landed there to an
+.BR rclone (1)
+remote, and removes the local copy before moving to the next one. One video at
+a time, so a long list never fills the disk.
+.PP
+Each URL gets its own staging directory. That matters: picking "the newest file
+in the download folder" guesses wrong the moment a download produces more than
+one file, or the folder has anything left over in it.
+.PP
+A URL that fails to download, or that downloads nothing, is counted and
+skipped; the rest of the list still runs. A URL whose upload fails keeps its
+local copy so the transfer can be retried by hand, and the path is printed.
+.SH OPTIONS
+.TP
+.BR \-r ", " \-\-remote " " \fIREMOTE\fR
+rclone destination, for example \fBgdrive:Recordings\fR. Required, unless it
+comes from the config file or
+.BR $DLUP_REMOTE .
+.TP
+.BR \-c ", " \-\-cookies " " \fIFILE\fR
+Cookie file to hand to yt\-dlp, for sites that only serve the media to a
+signed\-in session.
+.TP
+.BR \-d ", " \-\-dir " " \fIPATH\fR
+Staging directory. Default \fB~/.cache/dlup\fR.
+.TP
+.BR \-f ", " \-\-from\-file " " \fILIST\fR
+Read URLs from a file, one per line. Blank lines and everything from a \fB#\fR
+onwards are ignored, so the list can be commented.
+.TP
+.BR \-j ", " \-\-jobs " " \fIN\fR
+Concurrent fragments per download. Default \fB5\fR.
+.TP
+.B \-\-retries " " \fIN\fR
+Retries per download. Default \fB10\fR.
+.TP
+.BR \-k ", " \-\-keep
+Keep the local copy after a successful upload.
+.TP
+.BR \-n ", " \-\-dry\-run
+Print what would happen and transfer nothing.
+.TP
+.BR \-V ", " \-\-version
+Print the version and exit.
+.TP
+.BR \-h ", " \-\-help
+Show a usage summary and exit.
+.SH FILES
+.TP
+.B ~/.config/dlup/config
+Shell\-style \fBkey=value\fR lines. Recognised keys: \fBremote\fR,
+\fBcookies\fR, \fBdir\fR, \fBjobs\fR, \fBretries\fR.
+.PP
+Precedence, strongest first: command\-line options, the config file, then the
+environment.
+.SH ENVIRONMENT
+.TP
+.B DLUP_REMOTE
+Default rclone remote.
+.TP
+.B DLUP_COOKIES
+Default cookie file.
+.TP
+.B DLUP_DIR
+Default staging directory.
+.SH EXIT STATUS
+.TP
+.B 0
+Every URL downloaded and uploaded.
+.TP
+.B 1
+At least one URL failed.
+.TP
+.B 2
+Bad usage, or yt\-dlp or rclone is missing.
+.SH EXAMPLES
+One video:
+.PP
+.RS
+.EX
+dlup \-r gdrive:Recordings https://example.com/video
+.EE
+.RE
+.PP
+A commented list, behind a login:
+.PP
+.RS
+.EX
+dlup \-r gdrive:Recordings \-c ~/cookies.txt \-f links.txt
+.EE
+.RE
+.PP
+With the remote in the config file, so it never has to be typed:
+.PP
+.RS
+.EX
+printf 'remote=gdrive:Recordings\\n' > ~/.config/dlup/config
+dlup https://example.com/video
+.EE
+.RE
+.SH SEE ALSO
+.BR yt\-dlp (1),
+.BR rclone (1)
+.SH AUTHOR
+Written by @MAINTAINER@.

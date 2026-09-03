@@ -1,0 +1,24 @@
+# bash completion for dlup
+_dlup() {
+    local cur prev
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    case "$prev" in
+        -c|--cookies|-f|--from-file) _filedir; return ;;
+        -d|--dir) _filedir -d; return ;;
+        -j|--jobs|--retries) COMPREPLY=($(compgen -W '1 2 5 10 16' -- "$cur")); return ;;
+        -r|--remote)
+            # Offer the remotes rclone actually knows about.
+            if command -v rclone >/dev/null 2>&1; then
+                COMPREPLY=($(compgen -W "$(rclone listremotes 2>/dev/null)" -- "$cur"))
+            fi
+            return ;;
+    esac
+
+    COMPREPLY=($(compgen -W \
+        '-r --remote -c --cookies -d --dir -f --from-file -j --jobs --retries -k --keep -n --dry-run -V --version -h --help' \
+        -- "$cur"))
+}
+complete -F _dlup dlup

@@ -1,0 +1,72 @@
+.TH HASHNUM 1 "2026" "hashnum @VERSION@" "User Commands"
+.SH NAME
+hashnum \- move a #N tag to the front of a filename
+.SH SYNOPSIS
+.B hashnum
+[\fIOPTION\fR]... [\fIFILE\fR]...
+.SH DESCRIPTION
+Downloads and exports often name files like
+.RB \(lq "Some Long Title #12.mp4" \(rq,
+which sorts by title rather than by number.
+.B hashnum
+lifts the \fB#N\fR tag out of wherever it sits and puts it at the front:
+.PP
+.RS
+.EX
+Some Long Title #12.mp4   \->   #12 Some Long Title.mp4
+.EE
+.RE
+.PP
+With no arguments it works on every file in the current directory that
+contains a \fB#N\fR tag. Files without one are left alone, and so are
+directories. Whitespace left behind by the removed tag is tidied up, and an
+existing file is never overwritten \(em a collision is reported and skipped.
+.PP
+Pair it with
+.BR padnum (1)
+when the numbers also need zero\-padding.
+.SH OPTIONS
+.TP
+.BR \-n ", " \-\-dry\-run
+Show what would be renamed and change nothing.
+.TP
+.BR \-q ", " \-\-quiet
+Print nothing except errors.
+.TP
+.BR \-V ", " \-\-version
+Print the version and exit.
+.TP
+.BR \-h ", " \-\-help
+Show a usage summary and exit.
+.SH EXIT STATUS
+.TP
+.B 0
+At least one file was renamed.
+.TP
+.B 1
+Nothing matched.
+.TP
+.B 2
+Bad usage.
+.SH EXAMPLES
+Look first, then do it:
+.PP
+.RS
+.EX
+hashnum \-n
+hashnum
+.EE
+.RE
+.PP
+Rename, then pad the numbers to a common width:
+.PP
+.RS
+.EX
+hashnum && padnum
+.EE
+.RE
+.SH SEE ALSO
+.BR padnum (1),
+.BR mv (1)
+.SH AUTHOR
+Written by @MAINTAINER@.

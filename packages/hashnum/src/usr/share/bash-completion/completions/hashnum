@@ -1,0 +1,12 @@
+# bash completion for hashnum
+_hashnum() {
+    local cur
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=($(compgen -W '-n --dry-run -q --quiet -V --version -h --help' -- "$cur"))
+        return
+    fi
+    _filedir
+}
+complete -F _hashnum hashnum

@@ -1,0 +1,352 @@
+#!/bin/bash
+
+shopt -s nullglob
+
+PADNUM_VERSION="@VERSION@"
+
+MAX_UNDO=10
+UNDO_FILE=".padnum.undo"
+
+padding=""
+dry_run=false
+ext_filter=""
+separator=" "
+undo_level=0
+show_history=false
+use_color=true
+[[ -t 1 ]] || use_color=false
+[[ -n "${NO_COLOR:-}" ]] && use_color=false
+
+target_dir=""
+
+show_help() {
+cat << 'EOF'
+padnum - Smart numeric prefix formatter for files
+
+USAGE:
+    padnum [OPTIONS] [DIRECTORY]
+
+DESCRIPTION:
+    padnum detects numeric prefixes at the beginning of filenames,
+    applies zero-padding, and preserves the rest of the filename exactly
+    as-is (Arabic, spaces, underscores, dots, etc).
+
+    If DIRECTORY is specified, padnum operates on files in that directory;
+    otherwise, it operates on the current working directory.
+
+OPTIONS:
+    -p, --padding N       Set fixed padding width (e.g., 3 → 001)
+                          If not specified, padding is auto-detected.
+
+    --sep STRING          Set separator between number and filename
+                          Default: single space
+                          Example: --sep "-"
+
+    --ext EXT             Process only files with given extension
+                          Example: --ext mp4
+
+    -n, --dry-run         Show what would be renamed without applying changes
+
+    --undo [N]            Undo last operation (or N levels)
+                          Default: 1
+
+    --history             Show undo history (oldest → newest)
+
+    --no-color            Never colourise the history view
+
+    -V, --version         Show program version
+
+    -h, --help            Show this help message and exit
+
+FEATURES:
+    • Smart number detection (handles 01file, 01-file, 01.file)
+    • Auto-padding detection
+    • Dry-run mode
+    • Multi-level undo (up to 10)
+    • Colorized readable history
+    • Safe operation (ignores files not starting with numbers)
+    • Operates on current directory or any specified target directory
+
+EXAMPLES:
+    padnum
+    padnum /path/to/folder
+    padnum -p 3 ./videos
+    padnum --sep "-" /media/music
+    padnum --ext mp4 my_series/
+    padnum --undo 2 /path/to/folder
+    padnum --history /path/to/folder
+
+EOF
+}
+
+# -------------------------------------------------
+# Helpers
+# -------------------------------------------------
+to_decimal() {
+    local n
+    n="$(echo "$1" | sed 's/^0*//')"
+    [[ -z "$n" ]] && n=0
+    echo "$n"
+}
+
+# -------------------------------------------------
+# Parse arguments
+# -------------------------------------------------
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -p|--padding)
+            if [[ ! "${2:-}" =~ ^[0-9]+$ ]]; then
+                echo "padnum: --padding needs a non-negative integer, e.g. '-p 3'" >&2
+                exit 2
+            fi
+            padding="$2"; shift 2 ;;
+        -n|--dry-run) dry_run=true; shift ;;
+        --ext) ext_filter="$2"; shift 2 ;;
+        --sep) separator="$2"; shift 2 ;;
+        --undo)
+            undo_level=1
+            [[ "$2" =~ ^[0-9]+$ ]] && undo_level="$2" && shift
+            shift
+            ;;
+        --history) show_history=true; shift ;;
+        -h|--help)
+            show_help
+            exit 0
+        ;;
+        -V|--version)
+            echo "padnum $PADNUM_VERSION"
+            exit 0
+            ;;
+        --no-color)
+            use_color=false; shift ;;
+        --)
+            shift
+            while [[ $# -gt 0 ]]; do
+                if [[ -z "$target_dir" ]]; then
+                    target_dir="$1"
+                else
+                    echo "padnum: too many arguments: '$1'" >&2
+                    echo "Usage: padnum [OPTIONS] [DIRECTORY]" >&2
+                    exit 2
+                fi
+                shift
+            done
+            break
+            ;;
+        -*)
+            echo "padnum: unknown option: $1" >&2
+            echo "Usage: padnum [OPTIONS] [DIRECTORY]" >&2
+            exit 2
+            ;;
+        *)
+            if [[ -z "$target_dir" ]]; then
+                target_dir="$1"
+                shift
+            else
+                echo "padnum: too many arguments: '$1'" >&2
+                echo "Usage: padnum [OPTIONS] [DIRECTORY]" >&2
+                exit 2
+            fi
+            ;;
+    esac
+done
+
+# -------------------------------------------------
+# Validate and switch target directory
+# -------------------------------------------------
+if [[ -n "$target_dir" ]]; then
+    if [[ ! -d "$target_dir" ]]; then
+        echo "padnum: cannot access '$target_dir': No such directory" >&2
+        exit 2
+    fi
+    if ! cd -- "$target_dir" 2>/dev/null; then
+        echo "padnum: cannot change directory to '$target_dir'" >&2
+        exit 2
+    fi
+fi
+
+# -------------------------------------------------
+# Show history
+# -------------------------------------------------
+if $show_history; then
+    [[ ! -f "$UNDO_FILE" ]] && {
+        echo "padnum: no undo history found" >&2
+        exit 1
+    }
+
+    awk -v color="$($use_color && echo 1 || echo 0)" '
+    BEGIN {
+        # ANSI colors
+        CYAN   = color ? "\033[36m" : ""
+        GREEN  = color ? "\033[32m" : ""
+        YELLOW = color ? "\033[33m" : ""
+        RED    = color ? "\033[31m" : ""
+        GRAY   = color ? "\033[90m" : ""
+        RESET  = color ? "\033[0m"  : ""
+
+        sep = "────────────────────────────────────────────────────────────"
+        block = 0
+    }
+
+    # Capture header line: "# UNDO n | timestamp"
+    /^# UNDO / {
+        block++
+        header[block] = $0
+        data[block] = ""
+        next
+    }
+
+    # Capture mapping lines
+    {
+        data[block] = data[block] $0 "\n"
+    }
+
+    END {
+        total = block
+        shown = 0
+
+        # Display OLDEST → NEWEST
+        for (i = total; i >= 1; i--) {
+            shown++
+            undo_num = total - shown + 1
+
+            split(header[i], h, "|")
+
+            print GRAY sep RESET
+            print CYAN "UNDO #" undo_num " |" h[2] RESET
+            print GRAY sep RESET
+            print "OLD → NEW\n"
+
+            split(data[i], lines, "\n")
+            for (j = 1; j <= length(lines); j++) {
+                if (lines[j] == "") continue
+                split(lines[j], f, "\t")
+                print RED f[1] RESET
+                print "    " YELLOW "→" RESET " " GREEN f[2] RESET "\n"
+            }
+        }
+    }
+    ' "$UNDO_FILE" | {
+        if [[ -t 1 && -t 0 && "${TERM:-}" != "dumb" ]] && command -v less >/dev/null 2>&1; then
+            less -RFX
+        else
+            cat
+        fi
+    }
+    
+    exit 0
+fi
+
+
+# -------------------------------------------------
+# UNDO MODE (history-based)
+# -------------------------------------------------
+if (( undo_level > 0 )); then
+    [[ -f "$UNDO_FILE" ]] || {
+        echo "padnum: no undo history found"
+        exit 1
+    }
+
+    total_blocks=$(grep -c '^# UNDO ' "$UNDO_FILE")
+    (( undo_level > total_blocks )) && {
+        echo "padnum: no more undo steps available"
+        exit 1
+    }
+
+    for ((lvl=1; lvl<=undo_level; lvl++)); do
+        awk -v level="$lvl" '
+            BEGIN { b=0 }
+            /^# UNDO / { b++; next }
+            b==level && NF { print }
+        ' "$UNDO_FILE" |
+        while IFS=$'\t' read -r old new; do
+            if $dry_run; then
+                echo mv "$new" ">>>" "$old"
+            else
+                [ -e "$new" ] && mv -n -- "$new" "$old"
+            fi
+        done
+    done
+
+    if ! $dry_run; then
+        awk -v skip="$undo_level" '
+            BEGIN { b=0 }
+            /^# UNDO / { b++; if (b<=skip) next }
+            b>skip { print }
+        ' "$UNDO_FILE" > "$UNDO_FILE.tmp" && mv "$UNDO_FILE.tmp" "$UNDO_FILE"
+
+        grep -q '^# UNDO ' "$UNDO_FILE" || rm -f "$UNDO_FILE"
+        echo "Undo level $undo_level completed."
+    fi
+    exit 0
+fi
+
+# -------------------------------------------------
+# Auto-detect padding (octal-safe)
+# -------------------------------------------------
+if [[ -z "$padding" ]]; then
+    max=0
+    for file in *; do
+        [[ -d "$file" ]] && continue
+        [[ -n "$ext_filter" && "${file,,}" != *.${ext_filter,,} ]] && continue
+        [[ "$file" =~ ^([0-9]+) ]] || continue
+
+        dec="$(to_decimal "${BASH_REMATCH[1]}")"
+        (( dec > max )) && max="$dec"
+    done
+    padding="${#max}"
+fi
+
+timestamp="$(date '+%Y-%m-%d %H:%M:%S')"
+renamed_count=0
+tmp_current=""
+
+if ! $dry_run; then
+    tmp_current="$(mktemp)"
+fi
+
+# -------------------------------------------------
+# Rename files
+# -------------------------------------------------
+for file in *; do
+    [[ -d "$file" ]] && continue
+    [[ -n "$ext_filter" && "${file,,}" != *.${ext_filter,,} ]] && continue
+    [[ "$file" =~ ^([0-9]+)(.*)$ ]] || continue
+
+    raw="${BASH_REMATCH[1]}"
+    rest="${BASH_REMATCH[2]}"
+    rest="$(echo "$rest" | sed -E 's/^[[:space:]_.-]+//')"
+
+    dec="$(to_decimal "$raw")"
+    printf -v new_num "%0*d" "$padding" "$dec"
+
+    new_name="${new_num}${separator}${rest}"
+    [[ "$file" == "$new_name" ]] && continue
+
+    if $dry_run; then
+        echo mv "$file" ">>>" "$new_name"
+    else
+        echo -e "$file\t$new_name" >> "$tmp_current"
+        mv -n -- "$file" "$new_name"
+        ((renamed_count++))
+    fi
+done
+
+if ! $dry_run; then
+    if (( renamed_count > 0 )); then
+        tmp_final="$(mktemp)"
+        echo "# UNDO 1 | $timestamp" > "$tmp_final"
+        cat "$tmp_current" >> "$tmp_final"
+
+        if [[ -f "$UNDO_FILE" ]]; then
+            awk -v max="$MAX_UNDO" '
+                BEGIN { c=1 }
+                /^# UNDO / { c++ }
+                c <= max { print }
+            ' "$UNDO_FILE" >> "$tmp_final"
+        fi
+
+        mv "$tmp_final" "$UNDO_FILE"
+    fi
+    rm -f "$tmp_current"
+fi

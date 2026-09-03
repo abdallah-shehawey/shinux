@@ -1,0 +1,34 @@
+# bash completion for meet
+_meet() {
+    local cur prev links
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    links="${MEET_LINKS:-}"
+    if [[ -z "$links" ]]; then
+        if [[ -f "$HOME/.meet/links" ]]; then
+            links="$HOME/.meet/links"
+        else
+            links="${XDG_CONFIG_HOME:-$HOME/.config}/meet/links"
+        fi
+    fi
+
+    case "$prev" in
+        -f|--file) _filedir; return ;;
+        -d|--delete|--del|--remove|-p|--print)
+            [[ -r "$links" ]] && COMPREPLY=($(compgen -W "$(awk '{print $1}' "$links")" -- "$cur"))
+            return ;;
+        -a|--add) return ;;   # a new name, nothing to suggest
+    esac
+
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=($(compgen -W \
+            '-a --add -d --delete -l --list -p --print -f --file -n --dry-run -V --version -h --help' \
+            -- "$cur"))
+        return
+    fi
+
+    [[ -r "$links" ]] && COMPREPLY=($(compgen -W "$(awk '{print $1}' "$links")" -- "$cur"))
+}
+complete -F _meet meet

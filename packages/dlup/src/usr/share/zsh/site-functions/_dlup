@@ -1,0 +1,26 @@
+#compdef dlup
+# zsh completion for dlup
+
+_dlup_remotes() {
+  local remotes
+  (( $+commands[rclone] )) || return 1
+  remotes=(${(f)"$(rclone listremotes 2>/dev/null)"})
+  _describe -t remotes 'rclone remote' remotes
+}
+
+_dlup() {
+  _arguments -s -S \
+    '(-r --remote)'{-r,--remote}'[rclone destination]:remote:_dlup_remotes' \
+    '(-c --cookies)'{-c,--cookies}'[cookie file for yt-dlp]:cookie file:_files' \
+    '(-d --dir)'{-d,--dir}'[staging directory]:directory:_files -/' \
+    '(-f --from-file)'{-f,--from-file}'[read URLs from a file]:list file:_files' \
+    '(-j --jobs)'{-j,--jobs}'[concurrent fragments]:count:(1 2 5 10 16)' \
+    '--retries[retries per download]:count:(1 3 5 10)' \
+    '(-k --keep)'{-k,--keep}'[keep the local copy after uploading]' \
+    '(-n --dry-run)'{-n,--dry-run}'[print what would happen]' \
+    '(- *)'{-V,--version}'[print version and exit]' \
+    '(- *)'{-h,--help}'[show help and exit]' \
+    '*:URL:_urls'
+}
+
+_dlup "$@"

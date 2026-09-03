@@ -1,0 +1,11 @@
+# Warm image for scripts/test-install.sh fedora.
+#
+# Identical to the base image plus the packages the test itself needs and a
+# populated dnf cache, so a test run does not re-download ~50 MB of Fedora
+# metadata every time. Optional: the test falls back to the plain base image.
+#
+#   podman build -t localhost/shinux-test-fedora -f scripts/Containerfile.test-fedora .
+FROM registry.fedoraproject.org/fedora:44
+RUN dnf install -y --setopt=tsflags= man-db bash-completion shadow-utils util-linux \
+ && dnf makecache \
+ && rm -rf /var/cache/dnf/*/packages

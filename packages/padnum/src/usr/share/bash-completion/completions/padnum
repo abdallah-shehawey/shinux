@@ -1,0 +1,35 @@
+# bash completion for padnum
+_padnum() {
+    local cur prev
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    case "$prev" in
+        -p|--padding)
+            COMPREPLY=($(compgen -W '1 2 3 4 5' -- "$cur")); return ;;
+        --sep)
+            COMPREPLY=($(compgen -W '" " "-" "_" "."' -- "$cur")); return ;;
+        --ext)
+            # Offer the extensions actually present in this directory.
+            local exts
+            exts=$(ls -1 2>/dev/null | sed -n 's/.*\.\([A-Za-z0-9]\{1,5\}\)$/\1/p' | sort -u)
+            COMPREPLY=($(compgen -W "$exts" -- "$cur")); return ;;
+        --undo)
+            COMPREPLY=($(compgen -W '1 2 3' -- "$cur")); return ;;
+    esac
+
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=($(compgen -W \
+            '-p --padding --sep --ext -n --dry-run --undo --history --no-color -V --version -h --help' \
+            -- "$cur"))
+        return
+    fi
+
+    if declare -F _filedir >/dev/null 2>&1; then
+        _filedir -d
+    else
+        COMPREPLY=($(compgen -d -- "$cur"))
+    fi
+}
+complete -F _padnum -o filenames -o dirnames padnum

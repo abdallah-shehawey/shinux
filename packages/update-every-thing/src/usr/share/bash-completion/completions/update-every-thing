@@ -1,0 +1,13 @@
+# bash completion for update-every-thing
+_update_every_thing() {
+    local cur prev
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    case "$prev" in
+        -c|--retries) COMPREPLY=($(compgen -W '1 2 3 5 10' -- "$cur")); return ;;
+    esac
+    COMPREPLY=($(compgen -W \
+        '-c --retries --with-nvidia -V --version -h --help' -- "$cur"))
+}
+complete -F _update_every_thing update-every-thing

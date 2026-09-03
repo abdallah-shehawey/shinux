@@ -1,0 +1,157 @@
+name: Publish repository
+
+# Rebuilds, re-signs and republishes docs/ whenever a package changes.
+#
+# docs/ is not in git. The packages live in the assets of the "pool" release,
+# this job restores them, rebuilds the metadata around them, and hands the
+# result to Pages as an artifact. Committing that tree instead is what had
+# grown the repository to 4.5 GB of history -- 270 MB per whatsapp-desktop
+# version, for files nobody clones it to read. Pages must be set to build from
+# GitHub Actions for this to deploy.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/**'
+      - 'scripts/**'
+      - '.github/workflows/publish.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # pool-assets.sh uploads the packages as release assets
+  pages: write
+  id-token: write
+
+concurrency:
+  group: publish-repository
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    container:
+      image: registry.fedoraproject.org/fedora:44
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Install packaging tooling
+        run: |
+          dnf -y install --setopt=install_weak_deps=False --nodocs \
+            git createrepo_c rpm-build rpm-sign dpkg gnupg2 python3 zstd \
+            tar gzip xz findutils diffutils nodejs npm make
+
+      # Full history: scripts/lib-pkg.sh dates an arch package from the last
+      # commit that touched it, and a depth-1 clone cannot see that.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Trust the workspace
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE/.wa-src"
+
+      - name: Import the signing key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          if [ -z "$GPG_PRIVATE_KEY" ]; then
+            echo "::error::secret GPG_PRIVATE_KEY is not set; run scripts/gpg-setup.sh locally and add it"
+            exit 1
+          fi
+          export GNUPGHOME="$RUNNER_TEMP/gnupg"
+          mkdir -p "$GNUPGHOME" && chmod 700 "$GNUPGHOME"
+          printf '%s\n' "$GPG_PRIVATE_KEY" | gpg --batch --quiet --import
+          echo "SIGN_GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
+
+      # whatsapp-desktop bundles Electron: 194 MB in one file, past what GitHub
+      # accepts in a push, so packages/whatsapp-desktop/src/ is git-ignored and
+      # staged from the app's own repository instead. Without this the package
+      # builds holding nothing but its README -- scripts/build.sh skips it in
+      # that case rather than publishing the empty result over the good one.
+      - name: Check out the whatsapp-desktop sources
+        uses: actions/checkout@v5
+        with:
+          repository: abdallah-shehawey/whatsapp-desktop
+          path: .wa-src
+
+      - name: Stage the whatsapp-desktop payload
+        run: SRC="$GITHUB_WORKSPACE/.wa-src" ./packages/whatsapp-desktop/refresh.sh
+
+      # The pool is 0.9 GB of packages that have not changed. Restoring it from
+      # here rather than from the release keeps the download counters honest:
+      # every asset fetch is a download GitHub records, and a repository that
+      # re-downloads its own pool on every publish would drown the handful of
+      # real installs in its own noise. A miss just falls through to the
+      # release, which is the authority either way.
+      - name: Restore the published pool
+        uses: actions/cache@v4
+        with:
+          path: docs
+          key: shinux-pool-${{ github.sha }}
+          restore-keys: shinux-pool-
+
+      # Whatever the cache did not have. On a cold cache this is the whole
+      # pool; normally it is nothing at all, because the only new package is
+      # the one this run is about to build.
+      - name: Fetch anything the cache is missing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./scripts/pool-fetch.sh 4
+
+      - name: Build packages
+        run: ./scripts/build.sh
+
+      - name: Sign and regenerate metadata
+        run: ./scripts/make-repo.sh
+
+      # The packages live here, not in git, and dnf downloads them straight
+      # from these assets -- GitHub counts those and Pages counts nothing. Here,
+      # not after the prune: an upload is add-only, so a version about to be
+      # dropped from the pool is still archived on the way past, and stays
+      # installable by URL long after the metadata stops offering it.
+      #
+      # After make-repo.sh, never before -- that is where the rpms are signed,
+      # and an unsigned copy up here would fail gpgcheck on every client.
+      - name: Publish the pool as release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./scripts/pool-assets.sh --require
+
+      # The Pages artifact has a 1 GB ceiling. whatsapp-desktop bundles Electron, so
+      # every version of it costs 225 MB across rpm + deb + arch -- at twenty
+      # versions docs/ had reached 4.19 GB and Pages was deploying it under
+      # protest ("Uploaded artifact size ... exceeds the allowed size of 1 GB.
+      # Deployment might fail"). Four versions is 861 MB and five is 1075 MB,
+      # and anything pruned here is still in the release, installable by URL,
+      # so the retention here is not a preference: it is the largest number
+      # that fits, and it has to run on every publish or one release puts the
+      # repository back over the line.
+      #
+      # After make-repo.sh, never before: the newly built version has to be in
+      # the pool before anything counts what is in it, or the run would prune
+      # to four and then publish a fifth.
+      - name: Prune the pool to the newest versions
+        run: ./scripts/prune.sh 4
+
+      # make-repo.sh again, because the metadata written above still indexes
+      # what was just deleted. The generators read the pool directory, so a
+      # second pass rewrites repomd.xml, Packages and shinux.db over what
+      # survived -- and re-signs them, since their contents changed. Cheap: the
+      # packages themselves are already in place and are left byte-for-byte
+      # alone.
+      - name: Re-index and re-sign what survived
+        run: ./scripts/make-repo.sh
+
+      # Everything Pages serves, in one artifact. The ceiling is 1 GB, which is
+      # what prune.sh above is sized against: one whatsapp-desktop version is
+      # ~250 MB across rpm + deb + arch.
+      - name: Package the site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy to Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

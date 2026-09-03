@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Demo binary shipped by the hello-shinux package.
+set -euo pipefail
+
+VERSION="@VERSION@"
+
+case "${1:-}" in
+  -v|--version) echo "hello-shinux ${VERSION}"; exit 0 ;;
+  -h|--help)
+    cat <<'USAGE'
+Usage: hello-shinux [OPTION]
+
+  -h, --help     show this message
+  -v, --version  print the installed version
+
+Installed from the Shinux repository. If you can run this, adding the
+repository and resolving a package from it both worked.
+USAGE
+    exit 0 ;;
+esac
+
+printf 'Hello from the Shinux repository!\n'
+printf 'version : %s\n' "${VERSION}"
+printf 'host    : %s\n' "$(uname -srm)"
+if [ -r /etc/os-release ]; then
+  . /etc/os-release
+  printf 'distro  : %s\n' "${PRETTY_NAME:-unknown}"
+fi

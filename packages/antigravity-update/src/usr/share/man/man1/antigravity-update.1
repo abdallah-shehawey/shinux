@@ -1,0 +1,148 @@
+.TH ANTIGRAVITY\-UPDATE 1 "2026" "antigravity-update @VERSION@" "User Commands"
+.SH NAME
+antigravity\-update \- install or update Antigravity IDE, wherever it lives
+.SH SYNOPSIS
+.B antigravity\-update
+[\fIOPTION\fR]...
+.SH DESCRIPTION
+Finds an existing Antigravity IDE installation and updates it in place, then
+refreshes its desktop integration.
+.PP
+The install directory is discovered rather than assumed, in this order: the
+\fBantigravity\fR or \fBantigravity\-ide\fR launcher on your \fBPATH\fR,
+followed up to the directory that actually contains
+\fBresources/app/product.json\fR; the \fBExec=\fR line of an installed
+desktop entry; and finally the usual prefixes \(em \fB/usr/share\fR,
+\fB/usr/local/share\fR, \fB/opt\fR and
+\fB~/.local/share\fR.
+.PP
+If nothing is installed, you are told so and asked whether to install it and
+where. With
+.B \-\-yes
+it installs to the default location without asking.
+.PP
+Compares the installed version with the newest published on
+\fBantigravity.google\fR. If the site is ahead, the new build is downloaded,
+verified and rsynced into place.
+.PP
+The download is resumable, so an interrupted run can simply be repeated. Before
+the archive is trusted its size is checked against what the server reported and
+its table of contents is listed, because a truncated resumable download
+otherwise looks like a success.
+.PP
+.B sudo
+is used only when the install directory really is not yours to write, so an
+installation under your home directory needs no password at all. Files the IDE
+writes itself are preserved across the update, and the Chromium sandbox is
+restored to setuid root, without which the IDE refuses to start.
+.SS Desktop integration
+After installing, the desktop entry, the icon and the command\-line launchers
+are rebuilt, so the application appears properly in the activities overview
+instead of as a nameless generic window. The icon is taken from the one the
+application ships in \fBresources/app/resources/linux\fR and installed into
+the hicolor theme, with a copy in \fB/usr/share/pixmaps\fR for desktops that
+ignore hicolor.
+.PP
+A system\-wide install writes to \fB/usr/share/applications\fR and
+\fB/usr/local/bin\fR; an install under your home directory writes to
+\fB~/.local/share/applications\fR and \fB~/.local/bin\fR instead.
+.PP
+Use
+.B \-\-desktop
+to rebuild just that, without touching the installation \(em handy when a
+launcher has gone missing or is showing the wrong icon.
+.SH OPTIONS
+.TP
+.BR \-c ", " \-\-check
+Report the installed and available versions, then exit without changing
+anything. Exits \fB3\fR when an update is available, which makes it easy to
+drive from a script.
+.TP
+.BR \-n ", " \-\-dry\-run
+Do everything except the install itself: resolve, download, verify, extract.
+.TP
+.BR \-f ", " \-\-force
+Reinstall even when the installed version is already current.
+.TP
+.BR \-k ", " \-\-keep
+Keep the downloaded archive instead of deleting it once the install succeeds.
+.TP
+.BR \-d ", " \-\-dir " " \fIPATH\fR
+Use this install directory instead of discovering one.
+.TP
+.BR \-y ", " \-\-yes
+Do not ask anything. If nothing is installed, install to the default location.
+.TP
+.B \-\-desktop
+Only rebuild the desktop entry, the icon and the launchers, then exit.
+.TP
+.B \-\-no\-desktop
+Update the files but leave desktop integration alone.
+.TP
+.BR \-V ", " \-\-version
+Print the version and exit.
+.TP
+.BR \-h ", " \-\-help
+Show a usage summary and exit.
+.SH EXIT STATUS
+.TP
+.B 0
+Already up to date, or updated successfully.
+.TP
+.B 1
+Something went wrong.
+.TP
+.B 2
+Bad usage, or a required program is missing.
+.TP
+.B 3
+With
+.BR \-\-check :
+an update is available.
+.TP
+.B 4
+With
+.BR \-\-check :
+Antigravity IDE is not installed.
+.SH ENVIRONMENT
+.TP
+.B ANTIGRAVITY_INSTALL_DIR
+Same as
+.BR \-\-dir .
+.SH EXAMPLES
+Ask whether an update exists, without installing it:
+.PP
+.RS
+.EX
+antigravity\-update \-\-check
+.EE
+.RE
+.PP
+Only act when there is something to do:
+.PP
+.RS
+.EX
+antigravity\-update \-\-check || antigravity\-update
+.EE
+.RE
+.PP
+Install for the first time, unattended, into your home directory:
+.PP
+.RS
+.EX
+antigravity\-update \-\-yes \-\-dir ~/.local/share/antigravity\-ide
+.EE
+.RE
+.PP
+The launcher lost its icon:
+.PP
+.RS
+.EX
+antigravity\-update \-\-desktop
+.EE
+.RE
+.SH SEE ALSO
+.BR update\-every\-thing (1),
+.BR rsync (1)
+.SH AUTHOR
+Written by @MAINTAINER@.

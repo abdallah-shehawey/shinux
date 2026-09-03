@@ -1,0 +1,14 @@
+# bash completion for antigravity-update
+_antigravity_update() {
+    local cur prev
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    case "$prev" in
+        -d|--dir) _filedir -d; return ;;
+    esac
+    COMPREPLY=($(compgen -W \
+        '-c --check -d --dir -n --dry-run -f --force -k --keep -y --yes --desktop --no-desktop -V --version -h --help' \
+        -- "$cur"))
+}
+complete -F _antigravity_update antigravity-update
