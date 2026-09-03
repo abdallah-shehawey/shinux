@@ -90,6 +90,43 @@ def files_desc(fields: dict[str, list[str]], package: pathlib.Path) -> str:
     return "%FILES%\n" + "\n".join(names) + "\n\n"
 
 
+def newest_per_name(
+    packages: list[pathlib.Path],
+) -> list[tuple[pathlib.Path, dict[str, list[str]]]]:
+    """One entry per package name, newest kept.
+
+    A pacman sync database is an index of what is available now, not an archive
+    of everything the pool holds. dnf and apt are handed every version and pick
+    for themselves; pacman reads the first entry it finds for a name, keeps
+    that one and says nothing -- so the moment a second version of the same
+    package reached the pool, `pacman -Si whatsapp` started answering with the
+    OLDER of the two and an upgrade was never offered. Verified against the
+    live repository, not reasoned about.
+
+    Older versions stay in the pool and in the release, installable with
+    `pacman -U <url>`, exactly as the rpms stay for `dnf downgrade`.
+
+    Ordered by `sort -V` over the file names, which is what prune.sh uses to
+    decide what leaves the pool: if the two disagreed this would index a
+    version the prune is about to delete.
+    """
+    order = subprocess.run(
+        ["sort", "-V"],
+        input="\n".join(p.name for p in packages),
+        text=True, capture_output=True, check=True,
+    ).stdout.splitlines()
+    rank = {name: i for i, name in enumerate(order)}
+
+    best: dict[str, tuple[pathlib.Path, dict[str, list[str]]]] = {}
+    for package in packages:
+        fields = pkginfo(package)
+        name = value(fields, "pkgname")
+        current = best.get(name)
+        if current is None or rank[package.name] > rank[current[0].name]:
+            best[name] = (package, fields)
+    return [best[name] for name in sorted(best)]
+
+
 def write_db(arch_dir: pathlib.Path, repo_id: str, key_id: str) -> None:
     def is_versioned(p: pathlib.Path) -> bool:
         stem = p.name.removesuffix(".pkg.tar.zst")
@@ -115,8 +152,7 @@ def write_db(arch_dir: pathlib.Path, repo_id: str, key_id: str) -> None:
         filesroot = root / "files"
         dbroot.mkdir()
         filesroot.mkdir()
-        for package in packages:
-            fields = pkginfo(package)
+        for package, fields in newest_per_name(packages):
             name = value(fields, "pkgname")
             version = value(fields, "pkgver")
             # <pkgname>-<pkgver>-<pkgrel>, and .PKGINFO's pkgver already ends
