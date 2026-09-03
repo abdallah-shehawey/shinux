@@ -107,7 +107,13 @@ elif command -v pacman >/dev/null 2>&1; then
   echo "==> Arch system detected, adding ${REPO_ID} pacman repository"
   fetch "${BASE_URL}/${REPO_ID}.gpg" "$tmp/${REPO_ID}.gpg" \
     || { echo "cannot reach ${BASE_URL}/${REPO_ID}.gpg" >&2; exit 1; }
-  install -d -m 0755 /etc/pacman.d/gnupg
+  # `pacman-key --init`, not `install -d`. --lsign-key signs with pacman's own
+  # local master key and fails with "There is no secret key available to sign
+  # with" if that keyring has not been initialised -- and the `install -d -m
+  # 0755` this replaces made it worse, because 0755 is exactly the mode gpg
+  # refuses to use a home directory at. --init is idempotent and is what the
+  # Arch documentation asks for before --add on any machine.
+  pacman-key --init >/dev/null 2>&1
   pacman-key --add "$tmp/${REPO_ID}.gpg" >/dev/null
   pacman-key --lsign-key "$(gpg --show-keys --with-colons "$tmp/${REPO_ID}.gpg" | awk -F: '$1 == "fpr" { print $10; exit }')" >/dev/null
   # The release, not Pages: pacman asks for shinux.db and then for a bare
