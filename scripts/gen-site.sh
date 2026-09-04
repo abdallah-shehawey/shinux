@@ -27,11 +27,12 @@ else
 fi
 FPR_PRETTY="$(echo "${FPR}" | sed 's/.\{4\}/& /g; s/ $//')"
 
-# Icons are generated once by scripts/make-icons.py and committed under site/,
-# which is the only part of the published tree that is still in git: docs/ is
-# assembled from scratch on every publish, and CI has no Pillow to redraw them
-# with. This is what puts them in the real tree and in the throwaway one the
-# install test serves.
+# Everything the page needs that is not generated: the icons, and the two web
+# fonts the page is drawn in. site/ is the only part of the published tree that
+# is still in git -- docs/ is assembled from scratch on every publish, and CI
+# has neither Pillow to redraw the icons nor the fonts installed to bake them.
+# This is what puts them in the real tree and in the throwaway one the install
+# test serves.
 shopt -s nullglob
 for icon in "${ROOT_DIR}"/site/*; do
   cp -f "${icon}" "${OUT_DIR}/"
@@ -360,12 +361,43 @@ cat > "${OUT_DIR}/index.html" <<HTMLEOF
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- The page's own font, found by the parser rather than by the stylesheet
+     below it. Only the Latin one: the Arabic face is for the odd word, and a
+     page with none of it should not pay 40 KB to find that out. -->
+<link rel="preload" href="poetsen-one.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+  /* Poetsen One for Latin, and beside it a face built for the Arabic it has
+     none of -- the pair this repository's maintainer reads their own desktop
+     in. Two @font-face faces of ONE family split by \`unicode-range\`: an Arabic
+     character matches both, and CSS breaks the tie by declaration order, so the
+     Arabic one is written SECOND and moving it is a bug.
+
+     Self-hosted rather than fetched from Google: one origin, no third party
+     watching who reads this page, and nothing to go wrong offline. Subsetted,
+     so the pair is 81 KB. Both files are committed under site/ and copied out
+     with the icons; licences in FONTS-NOTICE.txt beside them. \`local()\` comes
+     first, because the machine this was written on has both installed already.
+
+     One weight, 400 -- Poetsen One has no bold face, and the heavier text here
+     is the browser's synthesis, which is what it looks like on that desktop. */
+  @font-face{font-family:"Poetsen";
+    src:local("PoetsenOne"),local("Poetsen One"),url("poetsen-one.woff2") format("woff2");
+    font-weight:400;font-style:normal;font-display:swap;
+    unicode-range:U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,
+                  U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,
+                  U+2190-2193,U+2212,U+2215,U+2713-2714,U+FEFF,U+FFFD}
+  /* From the Arabic comma, not from U+0600: the Latin punctuation below it
+     reads better in the Latin face. */
+  @font-face{font-family:"Poetsen";
+    src:local("Poetsen Arabic"),url("poetsen-arabic.woff2") format("woff2");
+    font-weight:400;font-style:normal;font-display:swap;
+    unicode-range:U+060C-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF,
+                  U+10E60-10E7E,U+1EE00-1EEFF}
   :root{--bg:#0b0f14;--panel:#111823;--line:#1e2a3a;--fg:#e6edf5;--dim:#8ea0b5;
         --accent:#38bdf8;--accent2:#f59e0b;--code:#0a0e13}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);
-       font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+       font:16px/1.65 "Poetsen",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
   /* Full-bleed: the page uses the whole window, with the side gutter growing
      on wide screens instead of a centred column. Only running prose keeps a
      measure, so cards, tables and code blocks span the full width. */
