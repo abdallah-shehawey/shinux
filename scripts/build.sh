@@ -6,7 +6,11 @@ source "$(dirname "$0")/config.sh"
 source "$(dirname "$0")/lib-tools.sh"
 source "$(dirname "$0")/lib-pkg.sh"
 
-rm -rf "${BUILD_DIR}/out"
+# stage/ goes too. Staging is cached so the rpm, deb and arch builders of one
+# package all consume the same tree - within a run. Across runs it is a trap:
+# a source file edited after the last build would never reach the package, and
+# the stale copy would be signed and published without a word.
+rm -rf "${BUILD_DIR}/out" "${BUILD_DIR}/stage"
 mkdir -p "${BUILD_DIR}/out"/{rpm,deb,arch}
 
 # The configuration packages embed the public key, and it is no longer a

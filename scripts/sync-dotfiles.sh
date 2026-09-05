@@ -18,6 +18,11 @@ for pkgdir in "${ROOT_DIR}"/packages/*/; do
   name="$(basename "$pkgdir")"
   bin="${pkgdir}src/usr/bin/${name}"
   [ -f "$bin" ] || continue   # metapackages ship no command
+  # Scripts only. A compiled package ships an ELF binary built for one
+  # architecture against this machine's libraries, which is no use to the
+  # machines this mirror exists for -- and running sed over it is asking for a
+  # corrupted copy.
+  grep -Iq . "$bin" 2>/dev/null || continue
   # hello-shinux only exists to prove the repository works; it is not one of
   # the personal scripts the dotfiles carry.
   if [ "$name" = "hello-${REPO_ID}" ]; then continue; fi
