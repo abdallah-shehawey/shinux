@@ -22,7 +22,8 @@ Antigravity IDE, via
 .BR antigravity\-update (1)
 if it is installed. Its version is checked first, so nothing is downloaded when
 it is already current, and a machine without the IDE is not offered a
-first\-time install in the middle of a bulk update.
+first\-time install in the middle of a bulk update. A machine that has the IDE
+but not the updater is told so, rather than having the step disappear.
 .IP 2. 4
 System packages. On rpm systems, one
 .B upgrade \-\-refresh
@@ -57,9 +58,27 @@ NVIDIA and CUDA packages are left alone by default, because replacing the
 driver under a running session can break it.
 .PP
 On rpm systems this is an
-.BR \-\-exclude .
-apt has no equivalent, so the packages are put on hold for the length of the
-run and released afterwards. Packages that were
+.B \-\-exclude
+per installed driver package, by name. It is deliberately not a
+.I *nvidia*
+glob: that also catches
+.BR kmod\-nvidia\-\fIkernel\-version\fR ,
+the module built for one specific kernel \(em and a package the solver may not
+touch is one it may not erase either. The first time the oldest kernel came up
+for retirement, the module built for it had to go and could not, and the whole
+transaction failed on "requires kernel\-uname\-r = ..., but none of the
+providers can be installed", taking every unrelated update with it. The
+per\-kernel modules follow their kernel; only the driver is held.
+.PP
+apt has no
+.BR \-\-exclude ,
+so the packages are put on hold for the length of the run and released
+afterwards. The kernel\-tied
+.BR linux\-modules\-nvidia\-* ,
+.B linux\-objects\-*
+and
+.B linux\-signatures\-*
+are never held, for the same reason. Packages that were
 .I already
 held before the run are left held \(em they are not ours to release \(em and the
 holds this run adds are released even if you interrupt it.
@@ -68,6 +87,16 @@ Nothing aborts the run. A step that fails is retried a bounded number of times
 and then given up on, so the run always reaches the end and you get one report
 instead of discovering a failure three commands later. A step whose tool is not
 installed is skipped and recorded as such.
+.PP
+Only failures that could go away on their own are repeated. After a failed
+system update the transaction is re\-solved from the cache alone \(em no
+network, nothing installed \(em and if the package manager cannot resolve it,
+the run stops retrying that step, prints the problem once and records it.
+Repeating an unsolvable transaction only scrolls the real error off the screen.
+.PP
+Only the first attempt refreshes repository metadata. A retry does not need a
+second copy of it, and on a slow connection downloading every repository again
+is the most expensive part of the attempt.
 .PP
 Neither stdout nor stderr is redirected. That is deliberate: dnf, apt and
 flatpak draw progress on stderr and size it from the terminal, so piping either
